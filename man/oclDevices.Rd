@@ -10,7 +10,7 @@ Get a list of OpenCL devices.
 oclDevices(platform = oclPlatforms()[[1]], type = "default")
 }
 \arguments{
-  \item{platform}{OpenCL platform (see \code{link{oclPlatforms}})}
+  \item{platform}{OpenCL platform (see \code{\link{oclPlatforms}})}
   \item{type}{Desired device type, character vector of length one. Valid
     values are \code{"cpu"}, \code{"gpu"}, \code{"accelerator"},
     \code{"all"}, \code{"default"}. Partial matches are allowed.}
