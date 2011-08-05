@@ -1,0 +1,1 @@
+PKG_LIBS=`if test -z "$${PKG_LIBS}"; then if uname|grep -i darwin >/dev/null; then echo '-framework OpenCL'; else echo '-lOpenCL'; fi; else echo "$${PKG_LIBS}"; fi`

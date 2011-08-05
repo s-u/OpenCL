@@ -1,0 +1,4 @@
+useDynLib(OpenCL)
+exportPattern("^ocl")
+S3method(print, clDeviceID)
+S3method(print, clPlatformID)

@@ -1,0 +1,10 @@
+Package: OpenCL
+Version: 0.1-0
+Title: Interface allowing R to use OpenCL
+Author: Simon Urbanek <Simon.Urbanek@r-project.org>
+Maintainer: Simon Urbanek <Simon.Urbanek@r-project.org>
+Depends: R (>= 2.0.0)
+Description: This package provides an interface to OpenCL, allowing R to leverage computiong power of GPUs.
+License: BSD
+SystemRequirements: OpenCL library
+URL: http://www.rforge.net/OpenCL/
