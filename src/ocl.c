@@ -248,7 +248,7 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code) {
     {
 	SEXP sk = PROTECT(mkKernel(kernel));
 	Rf_setAttrib(sk, Rf_install("device"), device);
-	UNPROTECT(1);
+	UNPROTECT(2); /* sk + context */
 	return sk;
     }
 }
@@ -256,7 +256,7 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code) {
 SEXP ocl_call_double(SEXP args) {
     int on, an = 0;
     size_t global;
-    SEXP ker = CAR(args), olen, arg, res;
+    SEXP ker = CADR(args), olen, arg, res;
     cl_kernel kernel = getKernel(ker);
     cl_context context;
     cl_command_queue commands;
@@ -266,7 +266,7 @@ SEXP ocl_call_double(SEXP args) {
 
     if (clGetKernelInfo(kernel, CL_KERNEL_CONTEXT, sizeof(context), &context, NULL) != CL_SUCCESS || !context)
 	Rf_error("cannot obtain kernel context via clGetKernelInfo");
-    args = CDR(args);
+    args = CDDR(args);
     olen = CAR(args);
     args = CDR(args);
     on = Rf_asInteger(olen);
