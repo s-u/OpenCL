@@ -13,9 +13,9 @@
 }
 \usage{
 oclInfo(item)
-oclInfo.clDeviceID(item)
-oclInfo.clPlatformID(item)
-oclInfo.list(item)
+\method{oclInfo}{clDeviceID}(item)
+\method{oclInfo}{clPlatformID}(item)
+\method{oclInfo}{list}(item)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
