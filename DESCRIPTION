@@ -1,5 +1,5 @@
 Package: OpenCL
-Version: 0.1-0
+Version: 0.1-1
 Title: Interface allowing R to use OpenCL
 Author: Simon Urbanek <Simon.Urbanek@r-project.org>
 Maintainer: Simon Urbanek <Simon.Urbanek@r-project.org>

@@ -1,0 +1,10 @@
+NEWS for the OpenCL package
+
+0.1-1	 (under development)
+
+0.1-0	2011-08-08
+    o	first public release
+
+	includes support for single and double precision computations
+	as well as simple kernels (one output vector, arbitrary input)
+
