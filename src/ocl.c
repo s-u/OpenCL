@@ -219,18 +219,25 @@ SEXP ocl_get_platform_info(SEXP platform) {
 
 static char buffer[2048]; /* kernel build error buffer */
 
-SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code) {
+#define FT_SINGLE 0
+#define FT_DOUBLE 1
+
+SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
     cl_context ctx;
     int err;
     SEXP sctx;
     cl_device_id device_id = getDeviceID(device);
     cl_program program;
     cl_kernel kernel;
+    int ftype;
 
     if (TYPEOF(k_name) != STRSXP || LENGTH(k_name) != 1)
 	Rf_error("invalid kernel name");
     if (TYPEOF(code) != STRSXP || LENGTH(code) < 1)
 	Rf_error("invalid kernel code");
+    if (TYPEOF(prec) != STRSXP || LENGTH(prec) != 1)
+	Rf_error("invalid precision specification");
+    ftype = (CHAR(STRING_ELT(prec, 0))[0] == 'd') ? FT_DOUBLE : FT_SINGLE;
     ctx = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
     if (!ctx)
 	ocl_err("clCreateContext");
@@ -265,13 +272,63 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code) {
     {
 	SEXP sk = PROTECT(mkKernel(kernel));
 	Rf_setAttrib(sk, Rf_install("device"), device);
+	Rf_setAttrib(sk, Rf_install("precision"), prec);
 	UNPROTECT(2); /* sk + context */
 	return sk;
     }
 }
 
-SEXP ocl_call_double(SEXP args) {
-    int on, an = 0;
+struct arg_chain {
+    struct arg_chain *next;
+    int args, size;
+    void *arg[1];
+};
+
+static struct arg_chain *arg_alloc(struct arg_chain *parent, int size) {
+    struct arg_chain *c = (struct arg_chain*) malloc(sizeof(*c) + sizeof(void*) * size);
+    if (!c)
+	Rf_error("unable to allocate argument chain");
+    c->next = 0;
+    c->size = size;
+    c->args = 0;
+    if (parent)
+	parent->next = c;
+    return c;
+}
+
+static struct arg_chain *arg_add(struct arg_chain *where, void *arg) {
+    if (!where)
+	where = arg_alloc(0, 32);
+    if (where->args >= where->size) {
+	while (where->next) where = where->next;
+	where = where->next = arg_alloc(where, 32);
+    }
+    where->arg[where->args++] = arg;
+    return where;
+}
+
+static void arg_free(struct arg_chain *chain) {
+    int i, n = chain->args;
+    if (chain->next)
+	arg_free(chain->next);
+    for (i = 0; i < n; i++)
+	free(chain->arg[i]);
+    free(chain);
+}
+
+static void free_protected_args(SEXP o) {
+    arg_free((struct arg_chain*)R_ExternalPtrAddr(o));
+}
+
+static SEXP protected_args(struct arg_chain *chain) {
+    SEXP res = R_MakeExternalPtr(chain, R_NilValue, R_NilValue);
+    R_RegisterCFinalizerEx(res, free_protected_args, TRUE);
+    return res;
+}
+
+SEXP ocl_call(SEXP args) {
+    struct arg_chain *float_args = 0;
+    int on, an = 0, ftype = FT_DOUBLE, ftsize;
     size_t global;
     SEXP ker = CADR(args), olen, arg, res;
     cl_kernel kernel = getKernel(ker);
@@ -279,21 +336,29 @@ SEXP ocl_call_double(SEXP args) {
     cl_command_queue commands;
     cl_device_id device_id = getDeviceID(getAttrib(ker, Rf_install("device")));
     cl_mem output;
-    int err;
+    cl_int err;
 
     if (clGetKernelInfo(kernel, CL_KERNEL_CONTEXT, sizeof(context), &context, NULL) != CL_SUCCESS || !context)
 	Rf_error("cannot obtain kernel context via clGetKernelInfo");
     args = CDDR(args);
+    res = Rf_getAttrib(ker, install("precision"));
+    if (TYPEOF(res) == STRSXP && LENGTH(res) == 1 && CHAR(STRING_ELT(res, 0))[0] != 'd')
+	ftype = FT_SINGLE;
+    ftsize = (ftype == FT_DOUBLE) ? sizeof(double) : sizeof(float);
+    if (ftype == FT_SINGLE) /* need conversions, protect floats buffer */
+	PROTECT(protected_args(float_args = arg_alloc(0, 32)));
     olen = CAR(args);
     args = CDR(args);
     on = Rf_asInteger(olen);
     if (on < 0)
 	Rf_error("invalid output length");
-    output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(double) * on, NULL, NULL);
+    output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, ftsize * on, NULL, &err);
     if (!output)
-	Rf_error("failed to create output buffer via clCreateBuffer");
+	Rf_error("failed to create output buffer of %d elements via clCreateBuffer (%d)", on, err);
     if (clSetKernelArg(kernel, an++, sizeof(cl_mem), &output) != CL_SUCCESS)
 	Rf_error("failed to set first kernel argument as output in clSetKernelArg");
+    if (clSetKernelArg(kernel, an++, sizeof(on), &on) != CL_SUCCESS)
+	Rf_error("failed to set second kernel argument as output length in clSetKernelArg");
     commands = clCreateCommandQueue(context, device_id, 0, &err);
     if (!commands)
 	ocl_err("clCreateCommandQueue");
@@ -304,8 +369,22 @@ SEXP ocl_call_double(SEXP args) {
 	
 	switch (TYPEOF(arg)) {
 	case REALSXP:
-	    ptr = REAL(arg);
-	    al = sizeof(double);
+	    if (ftype == FT_SINGLE) {
+		int i;
+		float *f;
+		double *d = REAL(arg);
+		n = LENGTH(arg);
+		f = (float*) malloc(sizeof(float) * n);
+		if (!f)
+		    Rf_error("unable to allocate temporary single-precision memory for conversion from a double-precision argument vector of length %d", n);
+		for (i = 0; i < n; i++) f[i] = d[i];
+		ptr = f;
+		al = sizeof(float);
+		arg_add(float_args, ptr);
+	    } else {
+		ptr = REAL(arg);
+		al = sizeof(double);
+	    }
 	    break;
 	case INTSXP:
 	    ptr = INTEGER(arg);
@@ -344,10 +423,23 @@ SEXP ocl_call_double(SEXP args) {
     clFinish(commands);
 
     res = Rf_allocVector(REALSXP, on);
-    if (clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(double) * on, REAL(res), 0, NULL, NULL ) != CL_SUCCESS)
+    if (ftype == FT_SINGLE) { /* float - need a temporary buffer */
+	float *fr = (float*) malloc(sizeof(float) * on);
+	double *r = REAL(res);
+	int i;
+	if (!fr)
+	    Rf_error("unable to allocate memory for temporary single-precision output buffer");
+	arg_add(float_args, fr);
+	if (clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * on, fr, 0, NULL, NULL ) != CL_SUCCESS)
+	    Rf_error("Unable to transfer results");
+	for (i = 0; i < on; i++)
+	    r[i] = fr[i];
+    } else if (clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(double) * on, REAL(res), 0, NULL, NULL ) != CL_SUCCESS)
 	Rf_error("Unable to transfer results");
 
     clReleaseMemObject(output);
     clReleaseCommandQueue(commands);
+    if (ftype == FT_SINGLE)
+	UNPROTECT(1);
     return res;
 }

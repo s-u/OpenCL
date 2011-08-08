@@ -12,5 +12,10 @@ print.clPlatformID <- function(x, ...) {
 
 oclPlatforms <- function() .Call("ocl_platforms")
 oclDevices <- function(platform = oclPlatforms()[[1]], type="default") .Call("ocl_devices", platform, type)
-oclMakeKernel <- function(device, name, code) .Call("ocl_ez_kernel", device, name, code)
-oclRun <- function(kernel, size, ...) .External("ocl_call_double", kernel, size, ...)
+oclSimpleKernel <- function(device, name, code, precision=c("single","double")) .Call("ocl_ez_kernel", device, name, code, match.arg(precision))
+oclRun <- function(kernel, size, ...) .External("ocl_call", kernel, size, ...)
+
+oclInfo <- function(item) UseMethod("oclInfo")
+oclInfo.clDeviceID <- function(item) .Call("ocl_get_device_info", item)
+oclInfo.clPlatformID <- function(item) .Call("ocl_get_platform_info", item)
+oclInfo.list <- function(item) lapply(item, oclInfo)

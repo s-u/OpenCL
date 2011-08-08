@@ -10,7 +10,7 @@ Run a kernel using OpenCL.
 oclRun(kernel, size, ...)
 }
 \arguments{
-  \item{kernel}{kernel object as obtained from \code{\link{oclMakeKernel}}}
+  \item{kernel}{kernel object as obtained from \code{\link{oclSimpleKernel}}}
   \item{size}{length of the output vector}
   \item{\dots}{additional arguments passed to the kernel}
 }
@@ -33,7 +33,7 @@ oclRun(kernel, size, ...)
 Simon Urbanek
 }
 \seealso{
-\code{\link{oclMakeKernel}}
+\code{\link{oclSimpleKernel}}
 }
 \examples{
 library(OpenCL)
@@ -41,20 +41,47 @@ p = oclPlatforms()
 d = oclDevices(p[[1]])
 
 code = c(
+"__kernel void dnorm(\n",
+"  __global float* output,\n",
+" const unsigned int count,\n",
+"  __global float* input,\n",
+" const float mu, const float sigma)\n",
+"{\n",
+"  int i = get_global_id(0);\n",
+"  if(i < count)\n",
+"      output[i] = exp(-0.5f * ((input[i] - mu) / sigma) * ((input[i] - mu) / sigma)) ",
+"      / (sigma * sqrt( 2 * 3.14159265358979323846264338327950288 ) );\n",
+"};")
+k.dnorm <- oclSimpleKernel(d[[1]], "dnorm", code, "single")
+f <- function(x, mu, sigma)
+  oclRun(k.dnorm, length(x), x, 0, 1)
+
+## expect differences since the above uses single-precision but
+## it should be close enough
+f(1:10/2) - dnorm(1:10/2)
+
+## does the device support double-precision?
+if (grepl("cl_khr_fp64", oclInfo(d[[1]])$exts)) {
+code = c(
 "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
 "__kernel void dnorm(\n",
 "  __global double* output,\n",
-"  __global double* input,\n",
 " const unsigned int count,\n",
+"  __global double* input,\n",
 " const double mu, const double sigma)\n",
 "{\n",
 "  int i = get_global_id(0);\n",
 "  if(i < count)\n",
-"      output[i] = exp(-0.5f * ((input[i] - mu)/sigma) * ((input[i] - mu)/sigma)) / sigma;\n",
+"      output[i] = exp(-0.5f * ((input[i] - mu) / sigma) * ((input[i] - mu) / sigma)) ",
+"      / (sigma * sqrt( 2 * 3.14159265358979323846264338327950288 ) );\n",
 "};")
-k.dnorm <- oclMakeKernel(d[[1]], "dnorm", code)
+k.dnorm <- oclSimpleKernel(d[[1]], "dnorm", code, "double")
 f <- function(x, mu, sigma)
-  oclRun(k.dnorm, length(x), x, length(x), 0, 1)
-f(1:10/2)
+  oclRun(k.dnorm, length(x), x, 0, 1)
+
+## probably not identical, but close...
+f(1:10/2) - dnorm(1:10/2)
+} else cat("\nSorry, your device doesn't support double-precision\n")
+
 }
 \keyword{interface}
