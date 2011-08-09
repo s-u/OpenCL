@@ -8,25 +8,32 @@
 \alias{print.clFloat}
 \alias{length.clFloat}
 \alias{length<-.clFloat}
+\alias{[.clFloat}
+\alias{[<-.clFloat}
 \title{
   clFloat represents a single-precision vector that can be used with OpenCL.
 }
 \description{
   \code{clFloat} is a constructor of a single-precision vector - an
-  obejct of the class \code{"clFloat"}. The current internal
-  representation is a  raw vector of the machine-specific representation
-  of the C \code{float} type but this may change in the future. The
-  purpose of this type is to serve as a pass-though for OpenCL calls
+  object of the class \code{"clFloat"}.
+
+  The purpose of this type is to serve as a pass-though for OpenCL calls
   that involve single precision vectors such that they do not need to be
   converted to/from double precision and thus incurring the corresponding
   penalty. This type is not designed to be a full numeric vector
   replacement and thus opeartion such as arithmetics are intentionally
   not implemented.
 
+  The current internal representation is a  raw vector of the
+  machine-specific representation of the C \code{float} type but this
+  may change in the future so no code should rely on it. It also implies
+  that serialization is only compatible for machines of the same
+  endianness.
+
   \code{as.clFloat} coerces objects into single-precision vectors
   essentially by calling \code{clFloat(as.numeric(x))}.
 
-  \code{is.clFloat} returns \code{TRUE} the \code{x} is anobejct of the
+  \code{is.clFloat} returns \code{TRUE} the \code{x} is an object of the
   class \code{clFloat}
 
   Some most basic methods such as \code{length} or \code{print} are
@@ -42,11 +49,13 @@ is.clFloat(x)
 \method{print}{clFloat}(x, \dots)
 \method{length}{clFloat}(x)
 \method{length}{clFloat}(x) <- value
+\method{[}{clFloat}(x, \dots)
+\method{[}{clFloat}(x, \dots) <- value
 }
 \arguments{
   \item{x}{object}
   \item{\dots}{arguments passed to subsequent methods}
-  \item{value}{new length}
+  \item{value}{new length or values}
 }
 %\value{
 %}
@@ -65,6 +74,8 @@ as.character(x)
 as.integer(x)
 is.clFloat(x)
 identical(x, as.clFloat(as.numeric(x)))
+x[1:5]
+x[1] <- 0
 
 ## clFloat is the return type of oclRun(..., native.result=TRUE)
 ## for single-precision kernels. It can also be used instead of
