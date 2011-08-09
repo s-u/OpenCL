@@ -1,6 +1,9 @@
 NEWS for the OpenCL package
 
 0.1-1	 (under development)
+    o	 improve memory management and clean up on error in oclRun()
+
+    o	 add support for native single precision representation
 
 0.1-0	2011-08-08
     o	first public release
