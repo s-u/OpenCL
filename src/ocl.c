@@ -264,16 +264,15 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
     }
 
     kernel = clCreateKernel(program, CHAR(STRING_ELT(k_name, 0)), &err);
-    if (!kernel) {
-	clReleaseProgram(program);
+    clReleaseProgram(program);
+    if (!kernel)
 	ocl_err("clCreateKernel");
-    }
 
-    /* FIXME: do we need to retain/release queue and program? */
     {
 	SEXP sk = PROTECT(mkKernel(kernel));
 	Rf_setAttrib(sk, Rf_install("device"), device);
 	Rf_setAttrib(sk, Rf_install("precision"), prec);
+	Rf_setAttrib(sk, Rf_install("context"), sctx);
 	UNPROTECT(2); /* sk + context */
 	return sk;
     }
@@ -458,14 +457,16 @@ SEXP ocl_call(SEXP args) {
 	    if (clSetKernelArg(kernel, an++, al, ptr) != CL_SUCCESS)
 		Rf_error("Failed to set scalar kernel argument %d (size=%d)", an, al);
 	} else {
-	    cl_mem input = clCreateBuffer(context,  CL_MEM_READ_ONLY,  al * n, NULL, NULL);
+	    cl_mem input = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  al * n, ptr, &err);
 	    if (!input)
-		Rf_error("Unable to create buffer for vector argument %d", an);
+		Rf_error("Unable to create buffer (%d elements, %d bytes each) for vector argument %d (oclError %d)", n, al, an, err);
 	    if (!occ->mem_objects)
 		occ->mem_objects = arg_alloc(0, 32);
 	    arg_add(occ->mem_objects, input);
+#if 0 /* we used this before CL_MEM_USE_HOST_PTR */
 	    if (clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, al * n, ptr, 0, NULL, NULL) != CL_SUCCESS)
 		Rf_error("Failed to transfer data (%d elements) for vector argument %d", n, an);
+#endif
 	    if (clSetKernelArg(kernel, an++, sizeof(cl_mem), &input) != CL_SUCCESS)
 		Rf_error("Failed to set vector kernel argument %d (size=%d, length=%d)", an, al, n);
 	    /* clReleaseMemObject(input); */
@@ -478,11 +479,21 @@ SEXP ocl_call(SEXP args) {
 	Rf_error("Error during kernel execution");
     clFinish(commands);
 
+    /* we can release input memory objects now */
+    if (occ->mem_objects) {
+      arg_free(occ->mem_objects, (afin_t) clReleaseMemObject);
+      occ->mem_objects = 0;
+    }
+    if (float_args) {
+      arg_free(float_args, 0);
+      float_args = occ->float_args = 0;
+    }
+
     res = ftres ? Rf_allocVector(RAWSXP, on * sizeof(float)) : Rf_allocVector(REALSXP, on);
     if (ftype == FT_SINGLE) {
 	if (ftres) {
-	    if (clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * on, RAW(res), 0, NULL, NULL ) != CL_SUCCESS)
-		Rf_error("Unable to transfer results");
+	  if ((err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * on, RAW(res), 0, NULL, NULL )) != CL_SUCCESS)
+		Rf_error("Unable to transfer result vector (%d float elements, oclError %d)", on, err);
 	    PROTECT(res);
 	    Rf_setAttrib(res, R_ClassSymbol, mkString("clFloat"));
 	    UNPROTECT(1);
@@ -494,13 +505,13 @@ SEXP ocl_call(SEXP args) {
 	    if (!fr)
 		Rf_error("unable to allocate memory for temporary single-precision output buffer");
 	    occ->float_out = fr;
-	    if (clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * on, fr, 0, NULL, NULL ) != CL_SUCCESS)
-		Rf_error("Unable to transfer results");
+	    if ((err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * on, fr, 0, NULL, NULL )) != CL_SUCCESS)
+		Rf_error("Unable to transfer result vector (%d float elements, oclError %d)", on, err);
 	    for (i = 0; i < on; i++)
 		r[i] = fr[i];
 	}
-    } else if (clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(double) * on, REAL(res), 0, NULL, NULL ) != CL_SUCCESS)
-	Rf_error("Unable to transfer results");
+    } else if ((err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(double) * on, REAL(res), 0, NULL, NULL )) != CL_SUCCESS)
+	Rf_error("Unable to transfer result vector (%d double elements, oclError %d)", on, err);
 
     ocl_call_context_fin(octx);
     UNPROTECT(1);
