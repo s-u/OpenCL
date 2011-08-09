@@ -88,7 +88,7 @@ code = c(
 "      / (sigma * sqrt( 2 * 3.14159265358979323846264338327950288 ) );\n",
 "};")
 k.dnorm <- oclSimpleKernel(d[[1]], "dnorm", code, "double")
-f <- function(x, mu, sigma)
+f <- function(x, mu=0, sigma=1)
   oclRun(k.dnorm, length(x), x, mu, sigma)
 
 ## probably not identical, but close...
