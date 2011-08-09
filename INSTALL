@@ -1,0 +1,78 @@
+This OpenCL package requires at least one OpenCL implementation to be
+installed in order for OpenCL to work.
+
+OpenCL is a royalty-free standard (http://www.khronos.org/opencl/) and
+there are several implementations based on this standard. Each
+implementation is usually specific to a brand of a computing device
+(such as GPU, CPU or accelerator).
+
+
+*** OpenCL IMPLEMENTATIONS ***
+
+Most common implementations are (in no particular order):
+
+Type: GPU
+Vendor: NVIDIA
+URL: http://developer.nvidia.com/opencl
+Mostly supporting NVIDIA GPUs for computation. The OpenCL package has
+been successfully tested with "NVIDIA GPU computing SDK" on Linux and
+depending on the GPU device both single and double-precision is
+supported.
+The libraries can be either installed from NVIDIA directly or on very
+recent Debian and Ubuntu (from the non-free section) via
+apt-get install nvidia-opencl-dev
+
+
+Type: GPU, CPU
+Vendor: Apple
+This OpenCL implementation is part of Mac OS X 10.6 (Snow Leopard) and
+Max OS X 10.7 (Lion) operating systems. The OpenCL package has been
+successfully tested with nVidia GPU devices (only single-precision is
+supported on the devices available to us).
+The OpenCL framework is part of the OS so no additional libraries need
+to be installed.
+
+
+Type: GPU, CPU, ACC
+Vendor: ATI / AMD
+URL: http://developer.amd.com/zones/OpenCLZone/Pages/default.aspx
+Mostly supporting AMD (formerly ATI) GPUs and AMD CPUs for computation.
+Since I don't own any AMD GPUs or CPUs I could not test this
+implementation. Reports are welcome.
+
+
+Type: CPU, ACC
+Vendor: Intel
+URL: http://www.intel.com/go/opencl/
+Supports Intel CPUs. Given the ubiquity of Intel CPUs this is a good
+implementation to install for testing. The OpenCL has been
+successfully tested with this implementation and RForge.net uses this
+configuration for checks of the package (both single and double
+precision is supported).
+For Debian the installation is fairly simple, download from
+http://software.intel.com/en-us/articles/download-intel-opencl-sdk/
+apt-get install libnuma1
+fakeroot alien intel_ocl_sdk_1.1_lnx_64.rpm
+dpkg -i intel-ocl_1.1-13786_amd64.deb
+(alternatively rpm2cpio can be used to unpack the rpm directly)
+
+
+*** INSTALLATION ***
+
+Once you have an OpenCL implementation installed you can install the
+OpenCL R package using the regular install.packages() or R CMD INSTALL
+methods.
+
+The OpenCL package assumes the availability of OpenCL headers
+<CL/opencl.h> and OpenCL library at compile time. If you installed the
+OpenCL implementation in a non-standard location, you may have to
+set the PKG_CFLAGS and/or PKG_LIBS environment variables accordingly
+(and possibly LD_LIBRARY_PATH on some unix systems), see R
+documentation on this.
+
+
+---
+
+DISCLAIMER: Product or corporate names may be trademarks or registered
+trademarks, and are used only for identification and explanation
+wihtout intent to infringe.
