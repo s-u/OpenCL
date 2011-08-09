@@ -1,6 +1,6 @@
 NEWS for the OpenCL package
 
-0.1-1	(under development)
+0.1-1	2011-08-09
     o	improve memory management and clean up on error in oclRun()
 
     o	use CL_MEM_USE_HOST_PTR instead of clEnqueueWriteBuffer() for
