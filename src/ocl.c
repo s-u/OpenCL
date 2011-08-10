@@ -230,7 +230,6 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
     cl_device_id device_id = getDeviceID(device);
     cl_program program;
     cl_kernel kernel;
-    int ftype;
 
     if (TYPEOF(k_name) != STRSXP || LENGTH(k_name) != 1)
 	Rf_error("invalid kernel name");
@@ -238,7 +237,6 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
 	Rf_error("invalid kernel code");
     if (TYPEOF(prec) != STRSXP || LENGTH(prec) != 1)
 	Rf_error("invalid precision specification");
-    ftype = (CHAR(STRING_ELT(prec, 0))[0] == 'd') ? FT_DOUBLE : FT_SINGLE;
     ctx = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
     if (!ctx)
 	ocl_err("clCreateContext");
