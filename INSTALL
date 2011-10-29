@@ -38,7 +38,8 @@ Vendor: ATI / AMD
 URL: http://developer.amd.com/zones/OpenCLZone/Pages/default.aspx
 Mostly supporting AMD (formerly ATI) GPUs and AMD CPUs for computation.
 Since I don't own any AMD GPUs or CPUs I could not test this
-implementation. Reports are welcome.
+implementation. However, Kate Cowles reported success with AMD APP SDK
+on Ubuntu.
 
 
 Type: CPU, ACC
