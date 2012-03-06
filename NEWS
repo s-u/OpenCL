@@ -1,6 +1,11 @@
 NEWS for the OpenCL package
 
 0.1-2	(under development)
+    o	add the support for asynchronous calls, i.e., execution
+	parallel to the CPU. This is done by using
+	x <- oclRun(..., wait=FALSE) to dispatch the kernel and then
+	oclResult(x) to collect the results later.
+
     o	minor cleanup
 
 0.1-1	2011-08-09

@@ -1,13 +1,19 @@
 \name{oclRun}
 \alias{oclRun}
+\alias{oclResult}
 \title{
 Run a kernel using OpenCL.
 }
 \description{
-  \code{oclRun} is used to execute code that has been compiled for OpenCL.
+  \code{oclRun} is used to execute code that has been compiled for
+  OpenCL.
+
+  \code{oclResult} collects results from an asynchronous \code{oclRun}
+  call.
 }
 \usage{
-oclRun(kernel, size, ..., native.result = FALSE)
+oclRun(kernel, size, ..., native.result = FALSE, wait = TRUE)
+oclResult(context)
 }
 \arguments{
   \item{kernel}{kernel object as obtained from \code{\link{oclSimpleKernel}}}
@@ -16,6 +22,12 @@ oclRun(kernel, size, ..., native.result = FALSE)
   \item{native.result}{logical scalar, if \code{TRUE} then the
     result from a single-precision kernel is not converted to
     double-precision but returned as a \code{\link{clFloat}} object.}
+  \item{wait}{logical scalar, if \code{TRUE} then \code{oclRun} waits
+    for the operation to finish and returs the result. Otherwise the
+    kernel is  only enqueued,  so it will be run in parallel to R and have 
+    to be collected later with \code{oclResult}.}
+  \item{context}{context object that was returned by
+    \code{oclRun(..., wait = FALSE)} call.}
 }
 \details{
   \code{oclRun} pushes kernel arguments, executes the kernel and
@@ -33,9 +45,20 @@ oclRun(kernel, size, ..., native.result = FALSE)
   single-precision kernel. The caller is responsible for matching the
   argument types according to the kernel in a way similar to
   \code{\link{.C}} and \code{\link{.Call}}.
+
+  \code{oclResult} retrieves the result of a previous operation that was
+  enqueued using \code{oclRun(..., wait = FALSE)}. Note that results can
+  be collected only once and the context object becomes invalid after a
+  successful call to \code{oclResult} since all associated OpenCL
+  objects are released.
 }
 \value{
-  Result of the operation, a numeric vector of the length \code{size}.
+  \code{oclRun}: for \code{wait = TRUE} is the result of the operation,
+  a numeric vector of the length \code{size}.
+  Otherwise \code{oclRun} returns a call context object that can be used
+  by \code{oclResult} to retrieve the result.
+
+  \code{oclResult}: Result of the previously started operation.
 }
 \author{
   Simon Urbanek
