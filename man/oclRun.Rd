@@ -13,7 +13,7 @@ Run a kernel using OpenCL.
 }
 \usage{
 oclRun(kernel, size, ..., native.result = FALSE, wait = TRUE)
-oclResult(context)
+oclResult(context, wait = TRUE)
 }
 \arguments{
   \item{kernel}{kernel object as obtained from \code{\link{oclSimpleKernel}}}
@@ -47,7 +47,9 @@ oclResult(context)
   \code{\link{.C}} and \code{\link{.Call}}.
 
   \code{oclResult} retrieves the result of a previous operation that was
-  enqueued using \code{oclRun(..., wait = FALSE)}. Note that results can
+  enqueued using \code{oclRun(..., wait = FALSE)}. If
+  \code{oclResult(..., wait = FALSE)} is used then \code{NULL} is
+  returned in case the result is not ready yet. Note that results can
   be collected only once and the context object becomes invalid after a
   successful call to \code{oclResult} since all associated OpenCL
   objects are released.
@@ -58,7 +60,9 @@ oclResult(context)
   Otherwise \code{oclRun} returns a call context object that can be used
   by \code{oclResult} to retrieve the result.
 
-  \code{oclResult}: Result of the previously started operation.
+  \code{oclResult}: Result of the previously started operation or
+  \code{NULL} if \code{wait=FALSE} and the operation has not completed
+  yet.
 }
 \author{
   Simon Urbanek

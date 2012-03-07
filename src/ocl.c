@@ -65,12 +65,14 @@ static SEXP mkContext(cl_context ctx) {
     return ptr;
 }
 
+#if 0 /* currently unused so disable for now to avoid warnings ... */
 static cl_context getContext(SEXP ctx) {
     if (!Rf_inherits(ctx, "clContext") ||
 	TYPEOF(ctx) != EXTPTRSXP)
 	Rf_error("invalid OpenCL context");
     return (cl_context)R_ExternalPtrAddr(ctx);
 }
+#endif
 
 static void clFreeKernel(SEXP k) {
     clReleaseKernel((cl_kernel)R_ExternalPtrAddr(k));
@@ -343,7 +345,11 @@ static SEXP protected_args(struct arg_chain *chain, afin_t fin) {
 typedef struct ocl_call_context {
     cl_mem output;
     cl_command_queue commands;
-    int finished;
+    cl_event event;
+    int finished;   /* finished - results have been retrieved */
+#if USE_OCL_COMPLETE_CALLBACK
+    int completed;  /* completed - event has been triggered but not picked up */
+#endif
     int ftres, ftype, on; /* these are only set is the context leaves ocl_call */
     void *float_out;
     struct arg_chain *float_args, *mem_objects;
@@ -352,8 +358,9 @@ typedef struct ocl_call_context {
 static void ocl_call_context_fin(SEXP context) {
     ocl_call_context_t *ctx = (ocl_call_context_t*) R_ExternalPtrAddr(context);
     if (ctx) {
-	/* if this was an asynchronous call, we must wait for it to finish (right?) */
+	/* if this was an asynchronous call, we must wait for it to finish */
 	if (!ctx->finished) clFinish(ctx->commands);
+	if (ctx->event) clReleaseEvent(ctx->event);
 	if (ctx->output) clReleaseMemObject(ctx->output);
 	if (ctx->float_args) arg_free(ctx->float_args, 0);
 	if (ctx->float_out) free(ctx->float_out);
@@ -363,6 +370,15 @@ static void ocl_call_context_fin(SEXP context) {
 	CAR(context) = 0; /* this allows us to call the finalizer manually */
     }
 }
+
+#if USE_OCL_COMPLETE_CALLBACK /* we are curretnly not using the callback since it raises memory management issues and increases complexity */
+static void CL_CALLBACK ocl_complete_callback(cl_event event, cl_int status, void *ucc) {
+    ocl_call_context_t *ctx = (ocl_call_context_t*) ucc;
+    if (ctx) { /* just signal completion - we could be on any thread, so we don't want to issue a callback into R */
+	ctx->completed = 1;
+    }
+}
+#endif
 
 /* .External */
 SEXP ocl_call(SEXP args) {
@@ -480,10 +496,14 @@ SEXP ocl_call(SEXP args) {
     }
 
     global = on;
-    if (clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, NULL, 0, NULL, NULL) != CL_SUCCESS)
+    if (clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, NULL, 0, NULL, async ? &occ->event : NULL) != CL_SUCCESS)
 	Rf_error("Error during kernel execution");
 
     if (async) { /* asynchronous call -> get out and return the context */
+#if USE_OCL_COMPLETE_CALLBACK
+	clSetEventCallback(occ->event, CL_COMPLETE, ocl_complete_callback, occ);
+#endif
+	clFlush(commands); /* the specs don't guarantee execution unless clFlush is called */
 	occ->ftres = ftres;
 	occ->ftype = ftype;
 	occ->on = on;
@@ -534,7 +554,7 @@ SEXP ocl_call(SEXP args) {
     return res;
 }
 
-SEXP ocl_collect_call(SEXP octx) {
+SEXP ocl_collect_call(SEXP octx, SEXP wait) {
     SEXP res = R_NilValue;
     ocl_call_context_t *occ;
     int on;
@@ -545,6 +565,19 @@ SEXP ocl_collect_call(SEXP octx) {
     occ = (ocl_call_context_t*) R_ExternalPtrAddr(octx);
     if (!occ || occ->finished)
 	Rf_error("The call results have already been collected, they cannot be retrieved twice");
+
+    if (Rf_asInteger(wait) == 0 && occ->event) {
+	cl_int status;
+	if ((err = clGetEventInfo(occ->event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(status), &status, NULL)) != CL_SUCCESS)
+	    Rf_error("OpenCL error 0x%x while querying event object for the supplied context", (int) err);
+	
+	if (status < 0)
+	    Rf_error("Asynchronous call failed with error code 0x%x", (int) -status);
+
+	if (status != CL_COMPLETE)
+	    return R_NilValue;
+    }
+
     clFinish(occ->commands);
     occ->finished = 1;
     
