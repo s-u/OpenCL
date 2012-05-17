@@ -124,8 +124,6 @@ SEXP ocl_devices(SEXP platform, SEXP sDevType) {
     cl_device_id *did;
     cl_device_type dt = CL_DEVICE_TYPE_DEFAULT;
     const char *dts;
-    if (clGetDeviceIDs(pid, dt, 0, 0, &np) != CL_SUCCESS)
-	ocl_err("clGetDeviceIDs");
     if (TYPEOF(sDevType) != STRSXP || LENGTH(sDevType) != 1)
 	Rf_error("invalid device type - must be a character vector of length one");
     dts = CHAR(STRING_ELT(sDevType, 0));
@@ -141,6 +139,8 @@ SEXP ocl_devices(SEXP platform, SEXP sDevType) {
     }
     if (dt == CL_DEVICE_TYPE_DEFAULT && dts[0] != 'D' && dts[0] != 'd')
 	Rf_error("invalid device type - must be one of 'cpu', 'gpu', 'accelerator', 'default', 'all'.");
+    if (clGetDeviceIDs(pid, dt, 0, 0, &np) != CL_SUCCESS)
+	ocl_err("clGetDeviceIDs");
 
     res = Rf_allocVector(VECSXP, np);
     if (np > 0) {
