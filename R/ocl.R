@@ -13,7 +13,7 @@ print.clPlatformID <- function(x, ...) {
 oclPlatforms <- function() .Call("ocl_platforms")
 oclDevices <- function(platform = oclPlatforms()[[1]], type="default") .Call("ocl_devices", platform, type)
 oclSimpleKernel <- function(device, name, code, precision=c("single","double")) .Call("ocl_ez_kernel", device, name, code, match.arg(precision))
-oclRun <- function(kernel, size, ..., native.result=FALSE, wait=TRUE) .External("ocl_call", kernel, size, native.result, wait, ...)
+oclRun <- function(kernel, size, ..., native.result=FALSE, wait=TRUE, dim=size) .External("ocl_call", kernel, size, native.result, wait, dim, ...)
 oclResult <- function(context, wait = TRUE) .Call("ocl_collect_call", context, wait)
 
 oclInfo <- function(item) UseMethod("oclInfo")

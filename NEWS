@@ -6,6 +6,11 @@ NEWS for the OpenCL package
 	This affects only systems with more than one type of device.
 	(Thanks to Valerio Aimale for reporting)
 
+    o	added dim argument to oclRun() which allows multidimensional
+	indexing in the kernel. The dimensions can be obtained in the
+	kernel via get_global_size() and the index values with
+	get_global_id().
+
 0.1-2	2012-03-07
     o	add the support for asynchronous calls, i.e., execution
 	parallel to the CPU or multiple parallel GPU operations.

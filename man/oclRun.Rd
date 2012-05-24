@@ -12,7 +12,7 @@ Run a kernel using OpenCL.
   call.
 }
 \usage{
-oclRun(kernel, size, ..., native.result = FALSE, wait = TRUE)
+oclRun(kernel, size, ..., native.result = FALSE, wait = TRUE, dim = size)
 oclResult(context, wait = TRUE)
 }
 \arguments{
@@ -26,6 +26,14 @@ oclResult(context, wait = TRUE)
     for the operation to finish and returs the result. Otherwise the
     kernel is  only enqueued,  so it will be run in parallel to R and have 
     to be collected later with \code{oclResult}.}
+  \item{dim}{numeric vector describing the global work
+    dimensions, i.e., the index range that the kernel will be run
+    on. The kernel can use \code{get_global_id(n)} to obtain the
+    \code{(n + 1)}-th dimension index and \code{get_global_size(n)} to
+    get the dimension. OpenCL standard supports only up to three
+    dimensions, you can use use index vectors as arguments if more
+    dimensions are required. Note that \code{dim} is not necessarily the
+    dimension of the result although it can be.}
   \item{context}{context object that was returned by
     \code{oclRun(..., wait = FALSE)} call.}
 }
