@@ -1,6 +1,6 @@
 NEWS for the OpenCL package
 
-0.1-3	(under development)
+0.1-3	2012-05-25
     o	fix a bug causing device enumeration to use the default
 	device for device count regradless of the specified type.
 	This affects only systems with more than one type of device.
