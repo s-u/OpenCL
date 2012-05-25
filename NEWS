@@ -18,6 +18,9 @@ NEWS for the OpenCL package
     o	add precision="best" in oclSimpleKernel which switches
 	automatically to double-precision if supported by the device
 
+    o	kernels objects are now less cryptic - they implement
+	print(), names() and $ methods for access to their attributes.
+
 0.1-2	2012-03-07
     o	add the support for asynchronous calls, i.e., execution
 	parallel to the CPU or multiple parallel GPU operations.

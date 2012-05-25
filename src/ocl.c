@@ -273,6 +273,7 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
 	Rf_setAttrib(sk, Rf_install("device"), device);
 	Rf_setAttrib(sk, Rf_install("precision"), prec);
 	Rf_setAttrib(sk, Rf_install("context"), sctx);
+	Rf_setAttrib(sk, Rf_install("name"), k_name);
 	UNPROTECT(2); /* sk + context */
 	return sk;
     }
