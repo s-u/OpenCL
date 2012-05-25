@@ -12,7 +12,16 @@ print.clPlatformID <- function(x, ...) {
 
 oclPlatforms <- function() .Call("ocl_platforms")
 oclDevices <- function(platform = oclPlatforms()[[1]], type="default") .Call("ocl_devices", platform, type)
-oclSimpleKernel <- function(device, name, code, precision=c("single","double")) .Call("ocl_ez_kernel", device, name, code, match.arg(precision))
+oclSimpleKernel <- function(device, name, code, precision = c("single", "double", "best")) {
+  precision <- match.arg(precision)
+  if (precision == "best") { # detect supported precision from the device
+    precision <- if (any(grepl("cl_khr_fp64", oclInfo(device)$exts))) {
+      code <- c("#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n", gsub("\\bfloat\\b", "double", code))
+      "double"
+    } else "single"
+  }
+  .Call("ocl_ez_kernel", device, name, code, precision)
+}
 oclRun <- function(kernel, size, ..., native.result=FALSE, wait=TRUE, dim=size) .External("ocl_call", kernel, size, native.result, wait, dim, ...)
 oclResult <- function(context, wait = TRUE) .Call("ocl_collect_call", context, wait)
 

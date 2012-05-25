@@ -7,9 +7,16 @@ NEWS for the OpenCL package
 	(Thanks to Valerio Aimale for reporting)
 
     o	added dim argument to oclRun() which allows multidimensional
-	indexing in the kernel. The dimensions can be obtained in the
-	kernel via get_global_size() and the index values with
-	get_global_id().
+	indexing (up to 3d) in the kernel. The dimensions can be
+	obtained in the kernel via get_global_size() and the index
+	values with get_global_id(). Note that using index vectors
+	instead of multidimensional indexing may perform better
+	depending on the device. The default is to use single
+	dimension (dim=size) which is the same as previous versions of
+	OpenCL.
+
+    o	add precision="best" in oclSimpleKernel which switches
+	automatically to double-precision if supported by the device
 
 0.1-2	2012-03-07
     o	add the support for asynchronous calls, i.e., execution

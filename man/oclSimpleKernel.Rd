@@ -6,11 +6,9 @@
 \description{
   \code{oclSimpleKernel} creates a kernel object by compiling the supplied
   code. The kernel can them be used in \code{\link{oclRun}}.
-
-  
 }
 \usage{
-oclSimpleKernel(device, name, code, precision = c("single", "double"))
+oclSimpleKernel(device, name, code, precision = c("single", "double", "best"))
 }
 \arguments{
   \item{device}{Device (element of the list returned by
@@ -20,11 +18,16 @@ oclSimpleKernel(device, name, code, precision = c("single", "double"))
     the supplied code.}
   \item{code}{character vector containg the code. The code will be
     concatenated (as-is, no newlines are added!) by the engine.}
-  \item{precision}{precision of all floating-point arguments. Note that
-    R uses only double-precision floating point representation, so
-    single-precision computation requires temporary conversion of all
-    input and output values and thus has significant overhead. However,
-    not all devices support double-precision computation.}
+  \item{precision}{precision of all floating-point arguments in the
+    kernel. Note that R uses only double-precision floating point
+    representation, so single-precision computation requires temporary
+    conversion of all input and output values and thus has significant
+    overhead. However, not all devices support double-precision
+    computation. If "best" is used then the kernel code is expected to
+    use single-precision but it will be automatically augmented to
+    double-precision (by replacing words "float" with "double" in the
+    code and adding the \code{cl_khr_fp64} pragma) if supported by the
+    device.}
 }
 \details{
   \code{oclSimpleKernel} creates a new OpenCL context, then creates and
