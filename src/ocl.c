@@ -283,6 +283,15 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
 /*--- generic blockwise argument list that can be freed in one go ---*/
 typedef void (*afin_t)(void*);
 
+/* Wrapper around clReleaseMemObject for afin_t, because it adheres to a
+   different calling convention on Windows.
+   (OpenCL API calls have CL_API_CALL = __stdcall, afin_t assumes __cdecl.)
+ */
+void free_clmem(void *data)
+{
+    clReleaseMemObject(data);
+}
+
 struct arg_chain {
     struct arg_chain *next;
     afin_t fin;
@@ -365,7 +374,7 @@ static void ocl_call_context_fin(SEXP context) {
 	if (ctx->output) clReleaseMemObject(ctx->output);
 	if (ctx->float_args) arg_free(ctx->float_args, 0);
 	if (ctx->float_out) free(ctx->float_out);
-	if (ctx->mem_objects) arg_free(ctx->mem_objects, (afin_t) clReleaseMemObject);
+	if (ctx->mem_objects) arg_free(ctx->mem_objects, (afin_t) free_clmem);
 	if (ctx->commands) clReleaseCommandQueue(ctx->commands);
 	free(ctx);
 	CAR(context) = 0; /* this allows us to call the finalizer manually */
@@ -530,7 +539,7 @@ SEXP ocl_call(SEXP args) {
 
     /* we can release input memory objects now */
     if (occ->mem_objects) {
-      arg_free(occ->mem_objects, (afin_t) clReleaseMemObject);
+      arg_free(occ->mem_objects, (afin_t) free_clmem);
       occ->mem_objects = 0;
     }
     if (float_args) {
@@ -595,7 +604,7 @@ SEXP ocl_collect_call(SEXP octx, SEXP wait) {
     
     /* we can release input memory objects now */
     if (occ->mem_objects) {
-      arg_free(occ->mem_objects, (afin_t) clReleaseMemObject);
+      arg_free(occ->mem_objects, (afin_t) free_clmem);
       occ->mem_objects = 0;
     }
     if (occ->float_args) {
