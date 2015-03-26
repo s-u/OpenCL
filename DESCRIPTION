@@ -5,6 +5,6 @@ Author: Simon Urbanek <Simon.Urbanek@r-project.org>
 Maintainer: Simon Urbanek <Simon.Urbanek@r-project.org>
 Depends: R (>= 2.0.0)
 Description: This package provides an interface to OpenCL, allowing R to leverage computing power of GPUs and other HPC accelerator devices.
-License: BSD
+License: BSD_3_clause + file LICENSE
 SystemRequirements: OpenCL library
 URL: http://www.rforge.net/OpenCL/
