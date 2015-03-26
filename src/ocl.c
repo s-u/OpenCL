@@ -159,28 +159,27 @@ SEXP ocl_devices(SEXP platform, SEXP sDevType) {
     return res;
 }
 
+static char infobuf[2048];
+
 SEXP ocl_get_device_info_char(SEXP device, SEXP item) {
-    char buf[512];
     cl_device_id device_id = getDeviceID(device);
     cl_device_info pn = (cl_device_info) Rf_asInteger(item);
-    buf[0] = 0;
-    if (clGetDeviceInfo(device_id, pn, sizeof(buf), &buf, NULL) != CL_SUCCESS)
+    *infobuf = 0;
+    if (clGetDeviceInfo(device_id, pn, sizeof(infobuf), &infobuf, NULL) != CL_SUCCESS)
 	ocl_err("clGetDeviceInfo");
-    return Rf_mkString(buf);
+    return Rf_mkString(infobuf);
 }
 
 static SEXP getDeviceInfo(cl_device_id device_id, cl_device_info di) {
-    char buf[512];
-    if (clGetDeviceInfo(device_id, di, sizeof(buf), &buf, NULL) != CL_SUCCESS)
+    if (clGetDeviceInfo(device_id, di, sizeof(infobuf), &infobuf, NULL) != CL_SUCCESS)
 	ocl_err("clGetDeviceInfo");
-    return mkString(buf);
+    return Rf_mkString(infobuf);
 }
 
 static SEXP getPlatformInfo(cl_platform_id platform_id, cl_device_info di) {
-    char buf[512];
-    if (clGetPlatformInfo(platform_id, di, sizeof(buf), &buf, NULL) != CL_SUCCESS)
+    if (clGetPlatformInfo(platform_id, di, sizeof(infobuf), &infobuf, NULL) != CL_SUCCESS)
 	ocl_err("clGetPlatformInfo");
-    return mkString(buf);
+    return Rf_mkString(infobuf);
 }
 
 SEXP ocl_get_device_info(SEXP device) {
