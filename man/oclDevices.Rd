@@ -28,6 +28,6 @@ Simon Urbanek
 }
 \examples{
 p <- oclPlatforms()
-if (length(p)) print(oclDevices, "all")
+if (length(p)) print(oclDevices(p[[1]],"all"))
 }
 \keyword{interface}
