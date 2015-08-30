@@ -3,6 +3,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+
+uint32_t clFloat_NaReal_ = 0x7ff007a2;   /* 0x7A2 = 1954, as in R_NaReal */
 
 /* convert single precision object to a numeric vector */
 SEXP float2double(SEXP fObject) {
@@ -17,8 +20,12 @@ SEXP float2double(SEXP fObject) {
     res = Rf_allocVector(REALSXP, n);
     d = REAL(res);
     f = (const float*) RAW(fObject);
-    for (i = 0; i < n; i++)
-	d[i] = f[i];
+    for (i = 0; i < n; i++) {
+        if (memcmp(f + i, &clFloat_NaReal_, sizeof(float)))
+            d[i] = f[i];
+        else
+            d[i] = R_NaReal;
+    }
     return res;
 }
 
@@ -34,8 +41,12 @@ SEXP double2float(SEXP dObject) {
     d = REAL(dObject);
     res = PROTECT(Rf_allocVector(RAWSXP, n * sizeof(float)));
     f = (float*) RAW(res);
-    for (i = 0; i < n; i++)
-	f[i] = d[i];
+    for (i = 0; i < n; i++) {
+        if (memcmp(d + i, &R_NaReal, sizeof(double)))
+            f[i] = d[i];
+        else
+            ((int*)RAW(res))[i] = clFloat_NaReal_;
+    }
     Rf_setAttrib(res, R_ClassSymbol, Rf_mkString("clFloat"));
     UNPROTECT(1);
     return res;
@@ -60,8 +71,8 @@ SEXP clFloat_length_set(SEXP fObject, SEXP value) {
     res = PROTECT(Rf_allocVector(RAWSXP, newLen));
     cpy = (newLen > LENGTH(fObject)) ? LENGTH(fObject) : newLen;
     memcpy(RAW(res), RAW(fObject), cpy);
-    if (newLen > cpy) /* FIXME: we initialize to 0.0 - maybe we need NAs ? */
-	memset(RAW(res) + cpy, 0, newLen - cpy);
+    for (; cpy < newLen; cpy += sizeof(float))
+        *((int *)(RAW(res) + cpy)) = clFloat_NaReal_;
     Rf_setAttrib(res, R_ClassSymbol, Rf_mkString("clFloat"));
     UNPROTECT(1);
     return res;
