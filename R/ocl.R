@@ -1,3 +1,4 @@
+# Print information about OpenCL objects
 print.clDeviceID <- function(x, ...) {
   i <- .Call("ocl_get_device_info", x)
   cat(" OpenCL device '", i$name, "'\n", sep='')
@@ -16,9 +17,11 @@ print.clContext <- function(x, ...) {
   x
 }
 
+# Interface for clKernel objects.
+# The user sees them as list of their attributes.
 names.clKernel <- function(x) names(attributes(x))
 `$.clKernel` <- function(x, name) attr(x, name)
-`$<-.clKernel` <- function(x, name, value) stop("clKernel properies are read-only")
+`$<-.clKernel` <- function(x, name, value) stop("Kernel properties are read-only")
 print.clKernel <- function(x, ...) {
   cat(" OpenCL kernel '", attr(x, "name"),"'\n", sep='')
   a <- attributes(x)
@@ -27,9 +30,12 @@ print.clKernel <- function(x, ...) {
   print(a)
   x
 }
-  
+
+# Query platforms and devices
 oclPlatforms <- function() .Call("ocl_platforms")
 oclDevices <- function(platform = oclPlatforms()[[1]], type="default") .Call("ocl_devices", platform, type)
+
+# Compile a "simple kernel"
 oclSimpleKernel <- function(device, name, code, precision = c("single", "double", "best")) {
   precision <- match.arg(precision)
   if (precision == "best") { # detect supported precision from the device
@@ -40,9 +46,12 @@ oclSimpleKernel <- function(device, name, code, precision = c("single", "double"
   }
   .Call("ocl_ez_kernel", device, name, code, precision)
 }
+
+# Run a simple kernel and retrieve the result
 oclRun <- function(kernel, size, ..., native.result=FALSE, wait=TRUE, dim=size) .External("ocl_call", kernel, size, native.result, wait, dim, ...)
 oclResult <- function(context, wait = TRUE) .Call("ocl_collect_call", context, wait)
 
+# Get extended information about OpenCL objects
 oclInfo <- function(item) UseMethod("oclInfo")
 oclInfo.clDeviceID <- function(item) .Call("ocl_get_device_info", item)
 oclInfo.clPlatformID <- function(item) .Call("ocl_get_platform_info", item)

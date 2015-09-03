@@ -7,6 +7,7 @@
 
 uint32_t clFloat_NaReal_ = 0x7ff007a2;   /* 0x7A2 = 1954, as in R_NaReal */
 
+/* Implementation of as.double.clFloat */
 /* convert single precision object to a numeric vector */
 SEXP float2double(SEXP fObject) {
     const float *f;
@@ -29,6 +30,7 @@ SEXP float2double(SEXP fObject) {
     return res;
 }
 
+/* Implementation of clFloat = as.clFloat */
 /* convert a numeric vector to a single precision object */
 SEXP double2float(SEXP dObject) {
     const double *d;
@@ -52,12 +54,14 @@ SEXP double2float(SEXP dObject) {
     return res;
 }
 
+/* Implementation of length.clFloat */
 /* return the length of the vector as the number of elements.
    This is more efficient than length(unclass(x)). */
 SEXP clFloat_length(SEXP fObject) {
     return Rf_ScalarInteger(LENGTH(fObject) / sizeof(float));
 }
 
+/* Implementation of length<-.clFloat */
 /* set the length ofthe clFloat object, effectively resizing it */
 SEXP clFloat_length_set(SEXP fObject, SEXP value) {
     SEXP res;
@@ -66,7 +70,7 @@ SEXP clFloat_length_set(SEXP fObject, SEXP value) {
     if (newLen < 0)
 	Rf_error("invalid length");
     if (newLen > 536870912)
-	Rf_error("clFloat length cannot exceed 512Mb due to R vector length limitations");
+	Rf_error("clFloat length cannot exceed 512M due to R vector length limitations");
     newLen *= sizeof(float);
     res = PROTECT(Rf_allocVector(RAWSXP, newLen));
     cpy = (newLen > LENGTH(fObject)) ? LENGTH(fObject) : newLen;

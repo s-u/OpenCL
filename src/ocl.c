@@ -96,6 +96,7 @@ static cl_kernel getKernel(SEXP k) {
     return (cl_kernel)R_ExternalPtrAddr(k);
 }
 
+/* Implementation of oclPlatforms */
 SEXP ocl_platforms() {
     SEXP res;
     cl_uint np;
@@ -119,6 +120,7 @@ SEXP ocl_platforms() {
     return res;
 }
 
+/* Implementation of oclDevices */
 SEXP ocl_devices(SEXP platform, SEXP sDevType) {
     cl_platform_id pid = getPlatformID(platform);
     SEXP res;
@@ -184,6 +186,7 @@ static SEXP getPlatformInfo(cl_platform_id platform_id, cl_device_info di) {
     return Rf_mkString(infobuf);
 }
 
+/* Implementation of print.clDeviceID and oclInfo.clDeviceID */
 SEXP ocl_get_device_info(SEXP device) {
     SEXP res;
     cl_device_id device_id = getDeviceID(device);
@@ -203,6 +206,7 @@ SEXP ocl_get_device_info(SEXP device) {
     return res;
 }
 
+/* Implementation of print.clPlatformID and oclInfo.clPlatformID */
 SEXP ocl_get_platform_info(SEXP platform) {
     SEXP res;
     cl_platform_id platform_id = getPlatformID(platform);
@@ -226,6 +230,7 @@ static char buffer[2048]; /* kernel build error buffer */
 #define FT_SINGLE 0
 #define FT_DOUBLE 1
 
+/* Implementation of oclSimpleKernel */
 SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
     cl_context ctx;
     SEXP sctx;
@@ -349,7 +354,7 @@ static SEXP protected_args(struct arg_chain *chain, afin_t fin) {
    keep them in this structure which we allocate as an external
    pointer so it will be clean up either by the garbage collector
    in case of an error or by us at the end of the call.
-   This is rather important for memory obejcts since GPUs have
+   This is rather important for memory objects since GPUs have
    only limited memory.
 */
 typedef struct ocl_call_context {
@@ -360,7 +365,7 @@ typedef struct ocl_call_context {
 #if USE_OCL_COMPLETE_CALLBACK
     int completed;  /* completed - event has been triggered but not picked up */
 #endif
-    int ftres, ftype, on; /* these are only set is the context leaves ocl_call */
+    int ftres, ftype, on; /* these are only set if the context leaves ocl_call */
     void *float_out;
     struct arg_chain *float_args, *mem_objects;
 } ocl_call_context_t;
@@ -381,7 +386,7 @@ static void ocl_call_context_fin(SEXP context) {
     }
 }
 
-#if USE_OCL_COMPLETE_CALLBACK /* we are curretnly not using the callback since it raises memory management issues and increases complexity */
+#if USE_OCL_COMPLETE_CALLBACK /* we are currently not using the callback since it raises memory management issues and increases complexity */
 static void CL_CALLBACK ocl_complete_callback(cl_event event, cl_int status, void *ucc) {
     ocl_call_context_t *ctx = (ocl_call_context_t*) ucc;
     if (ctx) { /* just signal completion - we could be on any thread, so we don't want to issue a callback into R */
@@ -390,6 +395,7 @@ static void CL_CALLBACK ocl_complete_callback(cl_event event, cl_int status, voi
 }
 #endif
 
+/* Implementation of oclRun */
 /* .External */
 SEXP ocl_call(SEXP args) {
     struct arg_chain *float_args = 0;
@@ -576,6 +582,7 @@ SEXP ocl_call(SEXP args) {
     return res;
 }
 
+/* Implementation of oclResult */
 SEXP ocl_collect_call(SEXP octx, SEXP wait) {
     SEXP res = R_NilValue;
     ocl_call_context_t *occ;
