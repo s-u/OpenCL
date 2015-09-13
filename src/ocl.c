@@ -9,10 +9,8 @@
 #define USE_RINTERNALS 1
 #include <Rinternals.h>
 
-static cl_int last_ocl_error;
-
-void ocl_err(const char *str) {
-    Rf_error("%s failed (oclError %d)", str, last_ocl_error);
+void ocl_err(const char *str, cl_int error_code) {
+    Rf_error("%s failed (oclError %d)", str, error_code);
 }
 
 /* Encapsulation of a cl_platform_id as SEXP */
@@ -95,15 +93,17 @@ SEXP ocl_platforms() {
     SEXP res;
     cl_uint np;
     cl_platform_id *pid;
+    cl_int last_ocl_error;
+
     if ((last_ocl_error = clGetPlatformIDs(0, 0, &np)) != CL_SUCCESS)
-	ocl_err("clGetPlatformIDs");
+	ocl_err("clGetPlatformIDs", last_ocl_error);
     res = Rf_allocVector(VECSXP, np);
     if (np > 0) {
 	int i;
 	pid = (cl_platform_id *) malloc(sizeof(cl_platform_id) * np);
 	if ((last_ocl_error = clGetPlatformIDs(np, pid, 0)) != CL_SUCCESS) {
 	    free(pid);
-	    ocl_err("clGetPlatformIDs");
+	    ocl_err("clGetPlatformIDs", last_ocl_error);
 	}
 	PROTECT(res);
 	for (i = 0; i < np; i++)
@@ -122,6 +122,8 @@ SEXP ocl_devices(SEXP platform, SEXP sDevType) {
     cl_device_id *did;
     cl_device_type dt = CL_DEVICE_TYPE_DEFAULT;
     const char *dts;
+    cl_int last_ocl_error;
+
     if (TYPEOF(sDevType) != STRSXP || LENGTH(sDevType) != 1)
 	Rf_error("invalid device type - must be a character vector of length one");
     dts = CHAR(STRING_ELT(sDevType, 0));
@@ -138,7 +140,7 @@ SEXP ocl_devices(SEXP platform, SEXP sDevType) {
     if (dt == CL_DEVICE_TYPE_DEFAULT && dts[0] != 'D' && dts[0] != 'd')
 	Rf_error("invalid device type - must be one of 'cpu', 'gpu', 'accelerator', 'default', 'all'.");
     if ((last_ocl_error = clGetDeviceIDs(pid, dt, 0, 0, &np)) != CL_SUCCESS)
-	ocl_err("clGetDeviceIDs");
+	ocl_err("clGetDeviceIDs", last_ocl_error);
 
     res = Rf_allocVector(VECSXP, np);
     if (np > 0) {
@@ -146,7 +148,7 @@ SEXP ocl_devices(SEXP platform, SEXP sDevType) {
 	did = (cl_device_id *) malloc(sizeof(cl_device_id) * np);
 	if ((last_ocl_error = clGetDeviceIDs(pid, dt, np, did, 0)) != CL_SUCCESS) {
 	    free(did);
-	    ocl_err("clGetDeviceIDs");
+	    ocl_err("clGetDeviceIDs", last_ocl_error);
 	}
 	PROTECT(res);
 	for (i = 0; i < np; i++)
@@ -162,21 +164,26 @@ static char infobuf[2048];
 SEXP ocl_get_device_info_char(SEXP device, SEXP item) {
     cl_device_id device_id = getDeviceID(device);
     cl_device_info pn = (cl_device_info) Rf_asInteger(item);
+    cl_int last_ocl_error;
+
     *infobuf = 0;
-    if ((last_ocl_error = clGetDeviceInfo(device_id, pn, sizeof(infobuf), &infobuf, NULL)) != CL_SUCCESS)
-	ocl_err("clGetDeviceInfo");
+    last_ocl_error = clGetDeviceInfo(device_id, pn, sizeof(infobuf), &infobuf, NULL);
+    if (last_ocl_error != CL_SUCCESS)
+	ocl_err("clGetDeviceInfo", last_ocl_error);
     return Rf_mkString(infobuf);
 }
 
 static SEXP getDeviceInfo(cl_device_id device_id, cl_device_info di) {
-    if ((last_ocl_error = clGetDeviceInfo(device_id, di, sizeof(infobuf), &infobuf, NULL)) != CL_SUCCESS)
-	ocl_err("clGetDeviceInfo");
+    cl_int last_ocl_error = clGetDeviceInfo(device_id, di, sizeof(infobuf), &infobuf, NULL);
+    if (last_ocl_error != CL_SUCCESS)
+	ocl_err("clGetDeviceInfo", last_ocl_error);
     return Rf_mkString(infobuf);
 }
 
 static SEXP getPlatformInfo(cl_platform_id platform_id, cl_device_info di) {
-    if ((last_ocl_error = clGetPlatformInfo(platform_id, di, sizeof(infobuf), &infobuf, NULL)) != CL_SUCCESS)
-	ocl_err("clGetPlatformInfo");
+    cl_int last_ocl_error = clGetPlatformInfo(platform_id, di, sizeof(infobuf), &infobuf, NULL);
+    if (last_ocl_error != CL_SUCCESS)
+	ocl_err("clGetPlatformInfo", last_ocl_error);
     return Rf_mkString(infobuf);
 }
 
@@ -231,6 +238,7 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
     cl_device_id device_id = getDeviceID(device);
     cl_program program;
     cl_kernel kernel;
+    cl_int last_ocl_error;
 
     if (TYPEOF(k_name) != STRSXP || LENGTH(k_name) != 1)
 	Rf_error("invalid kernel name");
@@ -240,7 +248,7 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
 	Rf_error("invalid precision specification");
     ctx = clCreateContext(0, 1, &device_id, NULL, NULL, &last_ocl_error);
     if (!ctx)
-	ocl_err("clCreateContext");
+	ocl_err("clCreateContext", last_ocl_error);
     sctx = PROTECT(mkContext(ctx));
     {
 	int sn = LENGTH(code), i;
@@ -251,7 +259,7 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
 	program = clCreateProgramWithSource(ctx, sn, cptr, NULL, &last_ocl_error);
 	free(cptr);
 	if (!program)
-	    ocl_err("clCreateProgramWithSource");
+	    ocl_err("clCreateProgramWithSource", last_ocl_error);
     }
     
     last_ocl_error = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
@@ -265,7 +273,7 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
     kernel = clCreateKernel(program, CHAR(STRING_ELT(k_name, 0)), &last_ocl_error);
     clReleaseProgram(program);
     if (!kernel)
-	ocl_err("clCreateKernel");
+	ocl_err("clCreateKernel", last_ocl_error);
 
     {
 	SEXP sk = PROTECT(mkKernel(kernel));
@@ -403,6 +411,7 @@ SEXP ocl_call(SEXP args) {
     cl_mem output;
     size_t wdims[3] = {0, 0, 0};
     int wdim = 1;
+    cl_int last_ocl_error;
 
     if (clGetKernelInfo(kernel, CL_KERNEL_CONTEXT, sizeof(context), &context, NULL) != CL_SUCCESS || !context)
 	Rf_error("cannot obtain kernel context via clGetKernelInfo");
@@ -448,7 +457,7 @@ SEXP ocl_call(SEXP args) {
 	Rf_error("failed to set second kernel argument as output length in clSetKernelArg");
     occ->commands = commands = clCreateCommandQueue(context, device_id, 0, &last_ocl_error);
     if (!commands)
-	ocl_err("clCreateCommandQueue");
+	ocl_err("clCreateCommandQueue", last_ocl_error);
     if (ftype == FT_SINGLE) /* need conversions, create floats buffer */
 	occ->float_args = float_args = arg_alloc(0, 32);
     while ((arg = CAR(args)) != R_NilValue) {
@@ -498,7 +507,8 @@ SEXP ocl_call(SEXP args) {
 	n = LENGTH(arg);
 	if (ndiv != 1) n /= ndiv;
 	if (n == 1) {/* scalar */
-	    if ((last_ocl_error = clSetKernelArg(kernel, an++, al, ptr)) != CL_SUCCESS)
+            last_ocl_error = clSetKernelArg(kernel, an++, al, ptr);
+	    if (last_ocl_error != CL_SUCCESS)
 		Rf_error("Failed to set scalar kernel argument %d (size=%d, error code %d)", an, al, last_ocl_error);
 	} else {
 	    cl_mem input = clCreateBuffer(context,  CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,  al * n, ptr, &last_ocl_error);
@@ -508,18 +518,21 @@ SEXP ocl_call(SEXP args) {
 		occ->mem_objects = arg_alloc(0, 32);
 	    arg_add(occ->mem_objects, input);
 #if 0 /* we used this before CL_MEM_USE_HOST_PTR */
-	    if ((last_ocl_error = clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, al * n, ptr, 0, NULL, NULL)) != CL_SUCCESS)
+            last_ocl_error = clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, al * n, ptr, 0, NULL, NULL);
+	    if (last_ocl_error != CL_SUCCESS)
 		Rf_error("Failed to transfer data (%d elements) for vector argument %d (oclError %d)", n, an, last_ocl_error);
 #endif
-	    if ((last_ocl_error = clSetKernelArg(kernel, an++, sizeof(cl_mem), &input)) != CL_SUCCESS)
+            last_ocl_error = clSetKernelArg(kernel, an++, sizeof(cl_mem), &input);
+	    if (last_ocl_error != CL_SUCCESS)
 		Rf_error("Failed to set vector kernel argument %d (size=%d, length=%d, error %d)", an, al, n, last_ocl_error);
 	    /* clReleaseMemObject(input); */
 	}
 	args = CDR(args);
     }
 
-    if ((last_ocl_error = clEnqueueNDRangeKernel(commands, kernel, wdim, NULL, wdims, NULL, 0, NULL, async ? &occ->event : NULL)) != CL_SUCCESS)
-	ocl_err("Kernel execution");
+    last_ocl_error = clEnqueueNDRangeKernel(commands, kernel, wdim, NULL, wdims, NULL, 0, NULL, async ? &occ->event : NULL);
+    if (last_ocl_error != CL_SUCCESS)
+	ocl_err("Kernel execution", last_ocl_error);
 
     if (async) { /* asynchronous call -> get out and return the context */
 #if USE_OCL_COMPLETE_CALLBACK
@@ -550,7 +563,8 @@ SEXP ocl_call(SEXP args) {
     res = ftres ? Rf_allocVector(RAWSXP, on * sizeof(float)) : Rf_allocVector(REALSXP, on);
     if (ftype == FT_SINGLE) {
 	if (ftres) {
-	  if ((last_ocl_error = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * on, RAW(res), 0, NULL, NULL )) != CL_SUCCESS)
+            last_ocl_error = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * on, RAW(res), 0, NULL, NULL );
+	    if (last_ocl_error != CL_SUCCESS)
 		Rf_error("Unable to transfer result vector (%d float elements, oclError %d)", on, last_ocl_error);
 	    PROTECT(res);
 	    Rf_setAttrib(res, R_ClassSymbol, mkString("clFloat"));
@@ -563,13 +577,17 @@ SEXP ocl_call(SEXP args) {
 	    if (!fr)
 		Rf_error("unable to allocate memory for temporary single-precision output buffer");
 	    occ->float_out = fr;
-	    if ((last_ocl_error = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * on, fr, 0, NULL, NULL )) != CL_SUCCESS)
+            last_ocl_error = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * on, fr, 0, NULL, NULL );
+	    if (last_ocl_error != CL_SUCCESS)
 		Rf_error("Unable to transfer result vector (%d float elements, oclError %d)", on, last_ocl_error);
 	    for (i = 0; i < on; i++)
 		r[i] = fr[i];
 	}
-    } else if ((last_ocl_error = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(double) * on, REAL(res), 0, NULL, NULL )) != CL_SUCCESS)
-	Rf_error("Unable to transfer result vector (%d double elements, oclError %d)", on, last_ocl_error);
+    } else {
+        last_ocl_error = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(double) * on, REAL(res), 0, NULL, NULL );
+        if (last_ocl_error != CL_SUCCESS)
+            Rf_error("Unable to transfer result vector (%d double elements, oclError %d)", on, last_ocl_error);
+    }
 
     ocl_call_context_fin(octx);
     UNPROTECT(1);
@@ -581,6 +599,7 @@ SEXP ocl_collect_call(SEXP octx, SEXP wait) {
     SEXP res = R_NilValue;
     ocl_call_context_t *occ;
     int on;
+    cl_int last_ocl_error;
 
     if (!Rf_inherits(octx, "clCallContext"))
 	Rf_error("Invalid call context");
@@ -590,8 +609,9 @@ SEXP ocl_collect_call(SEXP octx, SEXP wait) {
 
     if (Rf_asInteger(wait) == 0 && occ->event) {
 	cl_int status;
-	if ((last_ocl_error = clGetEventInfo(occ->event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(status), &status, NULL)) != CL_SUCCESS)
-	    ocl_err("querying event object for the supplied context");
+        last_ocl_error = clGetEventInfo(occ->event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(status), &status, NULL);
+	if (last_ocl_error != CL_SUCCESS)
+	    ocl_err("querying event object for the supplied context", last_ocl_error);
 	
 	if (status < 0)
 	    Rf_error("Asynchronous call failed with error code 0x%x", (int) -status);
@@ -617,7 +637,8 @@ SEXP ocl_collect_call(SEXP octx, SEXP wait) {
     res = occ->ftres ? Rf_allocVector(RAWSXP, on * sizeof(float)) : Rf_allocVector(REALSXP, on);
     if (occ->ftype == FT_SINGLE) {
 	if (occ->ftres) {
-	    if ((last_ocl_error = clEnqueueReadBuffer( occ->commands, occ->output, CL_TRUE, 0, sizeof(float) * on, RAW(res), 0, NULL, NULL )) != CL_SUCCESS)
+            last_ocl_error = clEnqueueReadBuffer( occ->commands, occ->output, CL_TRUE, 0, sizeof(float) * on, RAW(res), 0, NULL, NULL );
+	    if (last_ocl_error != CL_SUCCESS)
 		Rf_error("Unable to transfer result vector (%d float elements, oclError %d)", on, last_ocl_error);
 	    PROTECT(res);
 	    Rf_setAttrib(res, R_ClassSymbol, mkString("clFloat"));
@@ -630,13 +651,17 @@ SEXP ocl_collect_call(SEXP octx, SEXP wait) {
 	    if (!fr)
 		Rf_error("unable to allocate memory for temporary single-precision output buffer");
 	    occ->float_out = fr;
-	    if ((last_ocl_error = clEnqueueReadBuffer( occ->commands, occ->output, CL_TRUE, 0, sizeof(float) * on, fr, 0, NULL, NULL )) != CL_SUCCESS)
+            last_ocl_error = clEnqueueReadBuffer( occ->commands, occ->output, CL_TRUE, 0, sizeof(float) * on, fr, 0, NULL, NULL );
+	    if (last_ocl_error != CL_SUCCESS)
 		Rf_error("Unable to transfer result vector (%d float elements, oclError %d)", on, last_ocl_error);
 	    for (i = 0; i < on; i++)
 		r[i] = fr[i];
 	}
-    } else if ((last_ocl_error = clEnqueueReadBuffer( occ->commands, occ->output, CL_TRUE, 0, sizeof(double) * on, REAL(res), 0, NULL, NULL )) != CL_SUCCESS)
-	Rf_error("Unable to transfer result vector (%d double elements, oclError %d)", on, last_ocl_error);
+    } else {
+        last_ocl_error = clEnqueueReadBuffer( occ->commands, occ->output, CL_TRUE, 0, sizeof(double) * on, REAL(res), 0, NULL, NULL );
+        if (last_ocl_error != CL_SUCCESS)
+            Rf_error("Unable to transfer result vector (%d double elements, oclError %d)", on, last_ocl_error);
+    }
 
     ocl_call_context_fin(octx);
     return res;
