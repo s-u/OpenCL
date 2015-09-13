@@ -15,45 +15,38 @@ void ocl_err(const char *str) {
     Rf_error("%s failed (oclError %d)", str, last_ocl_error);
 }
 
-static void clFreeFin(SEXP ref) {
-    free(R_ExternalPtrAddr(ref));
-}
-
+/* Encapsulation of a cl_platform_id as SEXP */
 static SEXP mkPlatformID(cl_platform_id id) {
-    SEXP ptr;
-    cl_platform_id *pp = (cl_platform_id*) malloc(sizeof(cl_platform_id));
-    pp[0] = id;
-    ptr = PROTECT(R_MakeExternalPtr(pp, R_NilValue, R_NilValue));
-    R_RegisterCFinalizerEx(ptr, clFreeFin, TRUE);
-    Rf_setAttrib(ptr, R_ClassSymbol, mkString("clPlatformID"));
+    SEXP platform_exp;
+    platform_exp = PROTECT(R_MakeExternalPtr(id, R_NilValue, R_NilValue));
+    Rf_setAttrib(platform_exp, R_ClassSymbol, mkString("clPlatformID"));
     UNPROTECT(1);
-    return ptr;
+    return platform_exp;
 }
 
 static cl_platform_id getPlatformID(SEXP platform) {
     if (!Rf_inherits(platform, "clPlatformID") || TYPEOF(platform) != EXTPTRSXP)
 	Rf_error("invalid platform");
-    return ((cl_platform_id*)R_ExternalPtrAddr(platform))[0];
+    return (cl_platform_id)R_ExternalPtrAddr(platform);
 }
 
+/* Encapsulation of a cl_device_id as SEXP */
 static SEXP mkDeviceID(cl_device_id id) {
-    SEXP ptr;
-    cl_device_id *pp = (cl_device_id*) malloc(sizeof(cl_device_id));
-    pp[0] = id;
-    ptr = PROTECT(R_MakeExternalPtr(pp, R_NilValue, R_NilValue));
-    R_RegisterCFinalizerEx(ptr, clFreeFin, TRUE);
-    Rf_setAttrib(ptr, R_ClassSymbol, mkString("clDeviceID"));
+    SEXP device_exp;
+    device_exp = PROTECT(R_MakeExternalPtr(id, R_NilValue, R_NilValue));
+    Rf_setAttrib(device_exp, R_ClassSymbol, mkString("clDeviceID"));
     UNPROTECT(1);
-    return ptr;
+    return device_exp;
 }
 
 static cl_device_id getDeviceID(SEXP device) {
     if (!Rf_inherits(device, "clDeviceID") ||
 	TYPEOF(device) != EXTPTRSXP)
 	Rf_error("invalid device");
-    return ((cl_device_id*)R_ExternalPtrAddr(device))[0];
+    return (cl_device_id)R_ExternalPtrAddr(device);
 }
 
+/* Encapsulation of a cl_context as SEXP */
 static void clFreeContext(SEXP ctx) {
     clReleaseContext((cl_context)R_ExternalPtrAddr(ctx));
 }
@@ -76,6 +69,7 @@ static cl_context getContext(SEXP ctx) {
 }
 #endif
 
+/* Encapsulation of a cl_kernel as SEXP */
 static void clFreeKernel(SEXP k) {
     clReleaseKernel((cl_kernel)R_ExternalPtrAddr(k));
 }
