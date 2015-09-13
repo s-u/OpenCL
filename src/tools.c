@@ -18,7 +18,7 @@ SEXP float2double(SEXP fObject) {
     if (TYPEOF(fObject) != RAWSXP || !inherits(fObject, "clFloat"))
 	Rf_error("invalid single precision object");
     n = LENGTH(fObject) / sizeof(float);
-    res = Rf_allocVector(REALSXP, n);
+    res = PROTECT(Rf_allocVector(REALSXP, n));
     d = REAL(res);
     f = (const float*) RAW(fObject);
     for (i = 0; i < n; i++) {
@@ -27,6 +27,7 @@ SEXP float2double(SEXP fObject) {
         else
             d[i] = R_NaReal;
     }
+    UNPROTECT(1);
     return res;
 }
 
