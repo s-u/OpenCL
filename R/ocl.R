@@ -1,20 +1,20 @@
 # Print information about OpenCL objects
 print.clDeviceID <- function(x, ...) {
   i <- .Call("ocl_get_device_info", x)
-  cat(" OpenCL device '", i$name, "'\n", sep='')
-  x
+  cat("OpenCL device '", i$name, "'\n", sep='')
+  invisible(x)
 }
 
 print.clPlatformID <- function(x, ...) {
   i <- .Call("ocl_get_platform_info", x)
-  cat(" OpenCL platform '", i$name, "'\n", sep='')
-  x
+  cat("OpenCL platform '", i$name, "'\n", sep='')
+  invisible(x)
 }
 
 print.clContext <- function(x, ...) {
-  cat(" OpenCL context ")
+  cat("OpenCL context ")
   print.default(x, ...)
-  x
+  invisible(x)
 }
 
 # Interface for clKernel objects.
@@ -23,12 +23,12 @@ names.clKernel <- function(x) names(attributes(x))
 `$.clKernel` <- function(x, name) attr(x, name)
 `$<-.clKernel` <- function(x, name, value) stop("Kernel properties are read-only")
 print.clKernel <- function(x, ...) {
-  cat(" OpenCL kernel '", attr(x, "name"),"'\n", sep='')
+  cat("OpenCL kernel '", attr(x, "name"),"'\n", sep='')
   a <- attributes(x)
   a$class <- NULL
   a$name <- NULL
   print(a)
-  x
+  invisible(x)
 }
 
 # Query platforms and devices
