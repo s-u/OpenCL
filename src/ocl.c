@@ -158,7 +158,10 @@ SEXP ocl_devices(SEXP platform, SEXP sDevType) {
     }
     if (dt == CL_DEVICE_TYPE_DEFAULT && dts[0] != 'D' && dts[0] != 'd')
 	Rf_error("invalid device type - must be one of 'cpu', 'gpu', 'accelerator', 'default', 'all'.");
-    if ((last_ocl_error = clGetDeviceIDs(pid, dt, 0, 0, &np)) != CL_SUCCESS)
+
+    last_ocl_error = clGetDeviceIDs(pid, dt, 0, 0, &np);
+    if (last_ocl_error != CL_SUCCESS &&
+        last_ocl_error != CL_DEVICE_NOT_FOUND)
 	ocl_err("clGetDeviceIDs", last_ocl_error);
 
     res = Rf_allocVector(VECSXP, np);
