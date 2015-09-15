@@ -58,14 +58,33 @@ static SEXP mkContext(cl_context ctx) {
     return ptr;
 }
 
-#if 0 /* currently unused so disable for now to avoid warnings ... */
 static cl_context getContext(SEXP ctx) {
     if (!Rf_inherits(ctx, "clContext") ||
 	TYPEOF(ctx) != EXTPTRSXP)
 	Rf_error("invalid OpenCL context");
     return (cl_context)R_ExternalPtrAddr(ctx);
 }
-#endif
+
+/* Encapsulation of a cl_command_queue as SEXP */
+static void clFreeCommandQueue(SEXP k) {
+    clReleaseCommandQueue((cl_command_queue)R_ExternalPtrAddr(k));
+}
+
+static SEXP mkCommandQueue(cl_command_queue queue) {
+    SEXP ptr;
+    ptr = PROTECT(R_MakeExternalPtr(queue, R_NilValue, R_NilValue));
+    R_RegisterCFinalizerEx(ptr, clFreeCommandQueue, TRUE);
+    Rf_setAttrib(ptr, R_ClassSymbol, mkString("clCommandQueue"));
+    UNPROTECT(1);
+    return ptr;
+}
+
+static cl_command_queue getCommandQueue(SEXP queue_exp) {
+    if (!Rf_inherits(queue_exp, "clCommandQueue") ||
+        TYPEOF(queue_exp) != EXTPTRSXP)
+        Rf_error("invalid OpenCL command queue");
+    return (cl_command_queue)R_ExternalPtrAddr(queue_exp);
+}
 
 /* Encapsulation of a cl_kernel as SEXP */
 static void clFreeKernel(SEXP k) {
@@ -159,6 +178,32 @@ SEXP ocl_devices(SEXP platform, SEXP sDevType) {
     return res;
 }
 
+/* Implementation of oclContext */
+SEXP ocl_context(SEXP device_exp)
+{
+    cl_device_id device_id = getDeviceID(device_exp);
+    cl_context ctx;
+    cl_command_queue queue;
+    SEXP ctx_exp, queue_exp;
+    cl_int last_ocl_error;
+
+    ctx = clCreateContext(NULL, 1, &device_id, NULL, NULL, &last_ocl_error);
+    if (!ctx)
+        ocl_err("clCreateContext", last_ocl_error);
+    ctx_exp = PROTECT(mkContext(ctx));
+    Rf_setAttrib(ctx_exp, Rf_install("device"), device_exp);
+
+    // Add command queue
+    queue = clCreateCommandQueue(ctx, device_id, 0, &last_ocl_error);
+    if (!queue)
+        ocl_err("clCreateCommandQueue", last_ocl_error);
+    queue_exp = PROTECT(mkCommandQueue(queue));
+    Rf_setAttrib(ctx_exp, Rf_install("queue"), queue_exp);
+
+    UNPROTECT(2);
+    return ctx_exp;
+}
+
 static char infobuf[2048];
 
 SEXP ocl_get_device_info_char(SEXP device, SEXP item) {
@@ -232,10 +277,9 @@ static char buffer[2048]; /* kernel build error buffer */
 #define FT_DOUBLE 1
 
 /* Implementation of oclSimpleKernel */
-SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
-    cl_context ctx;
-    SEXP sctx;
-    cl_device_id device_id = getDeviceID(device);
+SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP prec) {
+    cl_context ctx = getContext(context);
+    cl_device_id device = getDeviceID(getAttrib(context, Rf_install("device")));
     cl_program program;
     cl_kernel kernel;
     cl_int last_ocl_error;
@@ -246,10 +290,7 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
 	Rf_error("invalid kernel code");
     if (TYPEOF(prec) != STRSXP || LENGTH(prec) != 1)
 	Rf_error("invalid precision specification");
-    ctx = clCreateContext(0, 1, &device_id, NULL, NULL, &last_ocl_error);
-    if (!ctx)
-	ocl_err("clCreateContext", last_ocl_error);
-    sctx = PROTECT(mkContext(ctx));
+
     {
 	int sn = LENGTH(code), i;
 	const char **cptr;
@@ -262,10 +303,10 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
 	    ocl_err("clCreateProgramWithSource", last_ocl_error);
     }
     
-    last_ocl_error = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    last_ocl_error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         size_t len;
-        last_ocl_error = clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+        last_ocl_error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
 	clReleaseProgram(program);
 	Rf_error("clGetProgramBuildInfo failed (with %d): %s", last_ocl_error, buffer);
     }
@@ -277,11 +318,10 @@ SEXP ocl_ez_kernel(SEXP device, SEXP k_name, SEXP code, SEXP prec) {
 
     {
 	SEXP sk = PROTECT(mkKernel(kernel));
-	Rf_setAttrib(sk, Rf_install("device"), device);
+	Rf_setAttrib(sk, Rf_install("context"), context);
 	Rf_setAttrib(sk, Rf_install("precision"), prec);
-	Rf_setAttrib(sk, Rf_install("context"), sctx);
 	Rf_setAttrib(sk, Rf_install("name"), k_name);
-	UNPROTECT(2); /* sk + context */
+	UNPROTECT(1);
 	return sk;
     }
 }
@@ -382,7 +422,6 @@ static void ocl_call_context_fin(SEXP context) {
 	if (ctx->float_args) arg_free(ctx->float_args, 0);
 	if (ctx->float_out) free(ctx->float_out);
 	if (ctx->mem_objects) arg_free(ctx->mem_objects, (afin_t) free_clmem);
-	if (ctx->commands) clReleaseCommandQueue(ctx->commands);
 	free(ctx);
 	CAR(context) = 0; /* this allows us to call the finalizer manually */
     }
@@ -405,16 +444,14 @@ SEXP ocl_call(SEXP args) {
     int on, an = 0, ftype = FT_DOUBLE, ftsize, ftres, async;
     SEXP ker = CADR(args), olen, arg, res, octx, dimVec;
     cl_kernel kernel = getKernel(ker);
-    cl_context context;
-    cl_command_queue commands;
-    cl_device_id device_id = getDeviceID(getAttrib(ker, Rf_install("device")));
+    SEXP context_exp = getAttrib(ker, Rf_install("context"));
+    cl_context context = getContext(context_exp);
+    cl_command_queue commands = getCommandQueue(getAttrib(context_exp, Rf_install("queue")));
     cl_mem output;
     size_t wdims[3] = {0, 0, 0};
     int wdim = 1;
     cl_int last_ocl_error;
 
-    if (clGetKernelInfo(kernel, CL_KERNEL_CONTEXT, sizeof(context), &context, NULL) != CL_SUCCESS || !context)
-	Rf_error("cannot obtain kernel context via clGetKernelInfo");
     args = CDDR(args);
     res = Rf_getAttrib(ker, install("precision"));
     if (TYPEOF(res) == STRSXP && LENGTH(res) == 1 && CHAR(STRING_ELT(res, 0))[0] != 'd')
@@ -447,6 +484,7 @@ SEXP ocl_call(SEXP args) {
     if (!occ) Rf_error("unable to allocate ocl_call context");
     octx = PROTECT(R_MakeExternalPtr(occ, R_NilValue, R_NilValue));
     R_RegisterCFinalizerEx(octx, ocl_call_context_fin, TRUE);
+    occ->commands = commands;
 
     occ->output = output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, ftsize * on, NULL, &last_ocl_error);
     if (!output)
@@ -455,9 +493,6 @@ SEXP ocl_call(SEXP args) {
 	Rf_error("failed to set first kernel argument as output in clSetKernelArg");
     if (clSetKernelArg(kernel, an++, sizeof(on), &on) != CL_SUCCESS)
 	Rf_error("failed to set second kernel argument as output length in clSetKernelArg");
-    occ->commands = commands = clCreateCommandQueue(context, device_id, 0, &last_ocl_error);
-    if (!commands)
-	ocl_err("clCreateCommandQueue", last_ocl_error);
     if (ftype == FT_SINGLE) /* need conversions, create floats buffer */
 	occ->float_args = float_args = arg_alloc(0, 32);
     while ((arg = CAR(args)) != R_NilValue) {

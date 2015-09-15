@@ -8,11 +8,11 @@
   code. The kernel can them be used in \code{\link{oclRun}}.
 }
 \usage{
-oclSimpleKernel(device, name, code, precision = c("single", "double", "best"))
+oclSimpleKernel(context, name, code, precision = c("single", "double", "best"))
 }
 \arguments{
-  \item{device}{Device (element of the list returned by
-    \code{\link{oclDevices}()}) to compile the kernel on.
+  \item{context}{Context (as created by \code{\link{oclContext}})
+    to compile the kernel in.
   }
   \item{name}{Name of the kernel function - must match the name used in
     the supplied code.}
@@ -30,8 +30,8 @@ oclSimpleKernel(device, name, code, precision = c("single", "double", "best"))
     device.}
 }
 \details{
-  \code{oclSimpleKernel} creates a new OpenCL context, then creates and
-  builds the program specified by code and finally creates a kernel
+  \code{oclSimpleKernel} creates buffers for input and output data,
+  builds the program specified by \code{code} and finally creates a kernel
   from the program.
 
   The kernel built by this function is simple in that it can have
@@ -49,10 +49,10 @@ oclSimpleKernel(device, name, code, precision = c("single", "double", "best"))
   Kernel object that can be used by \code{\link{oclRun}}.
 }
 \author{
-Simon Urbanek
+  Simon Urbanek, Aaron Puchert
 }
 \seealso{
-  \code{\link{oclDevices}}, \code{\link{oclRun}}
+  \code{\link{oclContext}}, \code{\link{oclRun}}
 }
 %\examples{
 %}

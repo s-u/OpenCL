@@ -13,7 +13,21 @@ print.clPlatformID <- function(x, ...) {
 
 print.clContext <- function(x, ...) {
   cat("OpenCL context ")
+  attr <- attributes(x)
+  attributes(x) <- NULL
   print.default(x, ...)
+  cat("  Device: "); print(attr$device)
+  cat("  Queue: ");  print(attr$queue)
+  attributes(x) <- attr
+  invisible(x)
+}
+
+print.clCommandQueue <- function(x, ...) {
+  cat("OpenCL command queue ")
+  attr <- attributes(x)
+  attributes(x) <- NULL
+  print.default(x, ...)
+  attributes(x) <- attr
   invisible(x)
 }
 
@@ -35,8 +49,11 @@ print.clKernel <- function(x, ...) {
 oclPlatforms <- function() .Call("ocl_platforms")
 oclDevices <- function(platform = oclPlatforms()[[1]], type="default") .Call("ocl_devices", platform, type)
 
+# Create a context
+oclContext <- function(device) .Call("ocl_context", device)
+
 # Compile a "simple kernel"
-oclSimpleKernel <- function(device, name, code, precision = c("single", "double", "best")) {
+oclSimpleKernel <- function(context, name, code, precision = c("single", "double", "best")) {
   precision <- match.arg(precision)
   if (precision == "best") { # detect supported precision from the device
     precision <- if (any(grepl("cl_khr_fp64", oclInfo(device)$exts))) {
@@ -44,7 +61,7 @@ oclSimpleKernel <- function(device, name, code, precision = c("single", "double"
       "double"
     } else "single"
   }
-  .Call("ocl_ez_kernel", device, name, code, precision)
+  .Call("ocl_ez_kernel", context, name, code, precision)
 }
 
 # Run a simple kernel and retrieve the result
