@@ -33,9 +33,9 @@ static ClType get_type(SEXP mode_exp)
 static SEXP get_type_description(ClType type)
 {
     switch (type) {
-    case CLT_INT: return Rf_install("integer");
-    case CLT_FLOAT: return Rf_install("clFloat");
-    case CLT_DOUBLE: return Rf_install("numeric");
+    case CLT_INT: return Rf_mkString("integer");
+    case CLT_FLOAT: return Rf_mkString("clFloat");
+    case CLT_DOUBLE: return Rf_mkString("numeric");
     default: return R_NilValue;
     }
 }
