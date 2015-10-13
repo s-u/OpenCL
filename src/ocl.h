@@ -6,6 +6,14 @@
 
 typedef struct SEXPREC* SEXP;
 
+/* Symbols */
+extern SEXP oclDeviceSymbol;
+extern SEXP oclQueueSymbol;
+extern SEXP oclContextSymbol;
+extern SEXP oclPrecisionSymbol;
+extern SEXP oclNameSymbol;
+extern SEXP oclModeSymbol;
+
 /* Print error */
 void ocl_err(const char *str, cl_int error_code);
 

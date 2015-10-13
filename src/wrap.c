@@ -1,7 +1,25 @@
 #include "ocl.h"
 
-#define USE_RINTERNALS 1
 #include <Rinternals.h>
+
+/* Define symbols */
+SEXP oclDeviceSymbol;
+SEXP oclQueueSymbol;
+SEXP oclContextSymbol;
+SEXP oclPrecisionSymbol;
+SEXP oclNameSymbol;
+SEXP oclModeSymbol;
+
+/* Install symbols */
+__attribute__((constructor)) static void installSymbols()
+{
+    oclDeviceSymbol = Rf_install("device");
+    oclQueueSymbol = Rf_install("queue");
+    oclContextSymbol = Rf_install("context");
+    oclPrecisionSymbol = Rf_install("precision");
+    oclNameSymbol = Rf_install("name");
+    oclModeSymbol = Rf_install("mode");
+}
 
 void ocl_err(const char *str, cl_int error_code) {
     Rf_error("%s failed (oclError %d)", str, error_code);

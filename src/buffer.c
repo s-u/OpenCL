@@ -97,8 +97,8 @@ SEXP cl_create_buffer(SEXP context_exp, SEXP length_exp, SEXP mode_exp)
     buffer_exp = PROTECT(R_MakeExternalPtr(buffer, Rf_ScalarInteger(type), R_NilValue));
     R_RegisterCFinalizerEx(buffer_exp, cl_free_buffer, TRUE);
     Rf_setAttrib(buffer_exp, R_ClassSymbol, mkString("clBuffer"));
-    Rf_setAttrib(buffer_exp, Rf_install("context"), context_exp);
-    Rf_setAttrib(buffer_exp, Rf_install("mode"), get_type_description(type));
+    Rf_setAttrib(buffer_exp, oclContextSymbol, context_exp);
+    Rf_setAttrib(buffer_exp, oclModeSymbol, get_type_description(type));
     UNPROTECT(1);
     return buffer_exp;
 }
@@ -117,8 +117,8 @@ SEXP cl_get_buffer_length(SEXP buffer_exp)
 /* Read data from an OpenCL buffer */
 SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
 {
-    SEXP context_exp = Rf_getAttrib(buffer_exp, Rf_install("context"));
-    SEXP queue_exp = Rf_getAttrib(context_exp, Rf_install("queue"));
+    SEXP context_exp = Rf_getAttrib(buffer_exp, oclContextSymbol);
+    SEXP queue_exp = Rf_getAttrib(context_exp, oclQueueSymbol);
     cl_command_queue queue = getCommandQueue(queue_exp);
     cl_mem buffer = (cl_mem)R_ExternalPtrAddr(buffer_exp);
     ClType type = (ClType)Rf_asInteger(R_ExternalPtrTag(buffer_exp));
@@ -151,8 +151,8 @@ SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
 /* Write data to an OpenCL buffer */
 SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP values)
 {
-    SEXP context_exp = Rf_getAttrib(buffer_exp, Rf_install("context"));
-    SEXP queue_exp = Rf_getAttrib(context_exp, Rf_install("queue"));
+    SEXP context_exp = Rf_getAttrib(buffer_exp, oclContextSymbol);
+    SEXP queue_exp = Rf_getAttrib(context_exp, oclQueueSymbol);
     cl_command_queue queue = getCommandQueue(queue_exp);
     cl_mem buffer = (cl_mem)R_ExternalPtrAddr(buffer_exp);
     ClType type = (ClType)Rf_asInteger(R_ExternalPtrTag(buffer_exp));

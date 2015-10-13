@@ -91,14 +91,14 @@ SEXP ocl_context(SEXP device_exp)
     if (!ctx)
         ocl_err("clCreateContext", last_ocl_error);
     ctx_exp = PROTECT(mkContext(ctx));
-    Rf_setAttrib(ctx_exp, Rf_install("device"), device_exp);
+    Rf_setAttrib(ctx_exp, oclDeviceSymbol, device_exp);
 
     // Add command queue
     queue = clCreateCommandQueue(ctx, device_id, 0, &last_ocl_error);
     if (!queue)
         ocl_err("clCreateCommandQueue", last_ocl_error);
     queue_exp = PROTECT(mkCommandQueue(queue));
-    Rf_setAttrib(ctx_exp, Rf_install("queue"), queue_exp);
+    Rf_setAttrib(ctx_exp, oclQueueSymbol, queue_exp);
 
     UNPROTECT(2);
     return ctx_exp;
@@ -179,7 +179,7 @@ static char buffer[2048]; /* kernel build error buffer */
 /* Implementation of oclSimpleKernel */
 SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP prec) {
     cl_context ctx = getContext(context);
-    cl_device_id device = getDeviceID(getAttrib(context, Rf_install("device")));
+    cl_device_id device = getDeviceID(getAttrib(context, oclDeviceSymbol));
     cl_program program;
     cl_kernel kernel;
     cl_int last_ocl_error;
@@ -218,9 +218,9 @@ SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP prec) {
 
     {
 	SEXP sk = PROTECT(mkKernel(kernel));
-	Rf_setAttrib(sk, Rf_install("context"), context);
-	Rf_setAttrib(sk, Rf_install("precision"), prec);
-	Rf_setAttrib(sk, Rf_install("name"), k_name);
+	Rf_setAttrib(sk, oclContextSymbol, context);
+	Rf_setAttrib(sk, oclPrecisionSymbol, prec);
+	Rf_setAttrib(sk, oclNameSymbol, k_name);
 	UNPROTECT(1);
 	return sk;
     }
@@ -344,9 +344,9 @@ SEXP ocl_call(SEXP args) {
     int on, an = 0, ftype = FT_DOUBLE, ftsize, ftres, async;
     SEXP ker = CADR(args), olen, arg, res, octx, dimVec;
     cl_kernel kernel = getKernel(ker);
-    SEXP context_exp = getAttrib(ker, Rf_install("context"));
+    SEXP context_exp = getAttrib(ker, oclContextSymbol);
     cl_context context = getContext(context_exp);
-    cl_command_queue commands = getCommandQueue(getAttrib(context_exp, Rf_install("queue")));
+    cl_command_queue commands = getCommandQueue(getAttrib(context_exp, oclQueueSymbol));
     cl_mem output;
     size_t wdims[3] = {0, 0, 0};
     int wdim = 1;
