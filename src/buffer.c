@@ -4,15 +4,6 @@
 #define USE_RINTERNALS 1
 #include <Rinternals.h>
 
-/**
- * Supported buffer data types
- */
-typedef enum {
-    CLT_INT,
-    CLT_FLOAT,
-    CLT_DOUBLE
-} ClType;
-
 /* Translate description string to internal type */
 static ClType get_type(SEXP mode_exp)
 {
@@ -63,7 +54,7 @@ static size_t get_sexp_element_size(ClType type)
 }
 
 /* Translate type to corresponding SEXP type */
-SEXPTYPE get_sexptype(ClType type)
+static SEXPTYPE get_sexptype(ClType type)
 {
     switch (type) {
     case CLT_INT: return INTSXP;
@@ -71,12 +62,6 @@ SEXPTYPE get_sexptype(ClType type)
     case CLT_DOUBLE: return REALSXP;
     default: return ANYSXP;     // dummy return value
     }
-}
-
-static void cl_free_buffer(SEXP buffer_exp)
-{
-    cl_mem buffer = (cl_mem)R_ExternalPtrAddr(buffer_exp);
-    clReleaseMemObject(buffer);
 }
 
 /* Create an OpenCL buffer */
@@ -94,9 +79,7 @@ SEXP cl_create_buffer(SEXP context_exp, SEXP length_exp, SEXP mode_exp)
     if (!buffer)
         ocl_err("clCreateBuffer", last_ocl_error);
 
-    buffer_exp = PROTECT(R_MakeExternalPtr(buffer, Rf_ScalarInteger(type), R_NilValue));
-    R_RegisterCFinalizerEx(buffer_exp, cl_free_buffer, TRUE);
-    Rf_setAttrib(buffer_exp, R_ClassSymbol, mkString("clBuffer"));
+    buffer_exp = PROTECT(mkBuffer(buffer, type));
     Rf_setAttrib(buffer_exp, oclContextSymbol, context_exp);
     Rf_setAttrib(buffer_exp, oclModeSymbol, get_type_description(type));
     UNPROTECT(1);
@@ -106,7 +89,7 @@ SEXP cl_create_buffer(SEXP context_exp, SEXP length_exp, SEXP mode_exp)
 /* Retrieve the length of an OpenCL buffer */
 SEXP cl_get_buffer_length(SEXP buffer_exp)
 {
-    cl_mem buffer = (cl_mem)R_ExternalPtrAddr(buffer_exp);
+    cl_mem buffer = getBuffer(buffer_exp);
     ClType type = (ClType)Rf_asInteger(R_ExternalPtrTag(buffer_exp));
     size_t size;
 
@@ -117,10 +100,10 @@ SEXP cl_get_buffer_length(SEXP buffer_exp)
 /* Read data from an OpenCL buffer */
 SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
 {
+    cl_mem buffer = getBuffer(buffer_exp);
     SEXP context_exp = Rf_getAttrib(buffer_exp, oclContextSymbol);
     SEXP queue_exp = Rf_getAttrib(context_exp, oclQueueSymbol);
     cl_command_queue queue = getCommandQueue(queue_exp);
-    cl_mem buffer = (cl_mem)R_ExternalPtrAddr(buffer_exp);
     ClType type = (ClType)Rf_asInteger(R_ExternalPtrTag(buffer_exp));
     size_t size;
     SEXP res;
@@ -151,10 +134,10 @@ SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
 /* Write data to an OpenCL buffer */
 SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP values)
 {
+    cl_mem buffer = getBuffer(buffer_exp);
     SEXP context_exp = Rf_getAttrib(buffer_exp, oclContextSymbol);
     SEXP queue_exp = Rf_getAttrib(context_exp, oclQueueSymbol);
     cl_command_queue queue = getCommandQueue(queue_exp);
-    cl_mem buffer = (cl_mem)R_ExternalPtrAddr(buffer_exp);
     ClType type = (ClType)Rf_asInteger(R_ExternalPtrTag(buffer_exp));
     size_t size;
     cl_int last_ocl_error;

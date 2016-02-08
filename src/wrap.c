@@ -98,6 +98,28 @@ cl_command_queue getCommandQueue(SEXP queue_exp) {
     return (cl_command_queue)R_ExternalPtrAddr(queue_exp);
 }
 
+/* Encapsulation of a cl_mem as SEXP */
+static void clFreeBuffer(SEXP buffer_exp) {
+    cl_mem buffer = (cl_mem)R_ExternalPtrAddr(buffer_exp);
+    clReleaseMemObject(buffer);
+}
+
+SEXP mkBuffer(cl_mem buffer, ClType type) {
+    SEXP ptr;
+    ptr = PROTECT(R_MakeExternalPtr(buffer, Rf_ScalarInteger(type), R_NilValue));
+    R_RegisterCFinalizerEx(ptr, clFreeBuffer, TRUE);
+    Rf_setAttrib(ptr, R_ClassSymbol, mkString("clBuffer"));
+    UNPROTECT(1);
+    return ptr;
+}
+
+cl_mem getBuffer(SEXP buffer_exp) {
+    if (!Rf_inherits(buffer_exp, "clBuffer") ||
+        TYPEOF(buffer_exp) != EXTPTRSXP)
+        Rf_error("invalid OpenCL buffer");
+    return (cl_mem)R_ExternalPtrAddr(buffer_exp);
+}
+
 /* Encapsulation of a cl_kernel as SEXP */
 void clFreeKernel(SEXP k) {
     clReleaseKernel((cl_kernel)R_ExternalPtrAddr(k));

@@ -14,6 +14,13 @@ extern SEXP oclPrecisionSymbol;
 extern SEXP oclNameSymbol;
 extern SEXP oclModeSymbol;
 
+/* Supported buffer data types */
+typedef enum {
+    CLT_INT,
+    CLT_FLOAT,
+    CLT_DOUBLE
+} ClType;
+
 /* Print error */
 void ocl_err(const char *str, cl_int error_code);
 
@@ -34,6 +41,10 @@ cl_context getContext(SEXP ctx);
 void clFreeCommandQueue(SEXP k);
 SEXP mkCommandQueue(cl_command_queue queue);
 cl_command_queue getCommandQueue(SEXP queue_exp);
+
+/* Encapsulation of a cl_mem as SEXP */
+SEXP mkBuffer(cl_mem buffer, ClType type);
+cl_mem getBuffer(SEXP buffer_exp);
 
 /* Encapsulation of a cl_kernel as SEXP */
 void clFreeKernel(SEXP k);
