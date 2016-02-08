@@ -14,8 +14,8 @@ oclContext(device = "gpu")
 }
 \arguments{
   \item{device}{device object as obtained from \code{\link{oclDevices}}} or a
-  type as in \code{\link{oclDevices}. In this case, a suitable device of the
-  given type will be selected automatically.}
+  type as in \code{\link{oclDevices}}. In this case, a suitable device of the
+  given type will be selected automatically.
 }
 %\details{
 %}

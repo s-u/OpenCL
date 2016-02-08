@@ -202,13 +202,13 @@ SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP prec) {
 	if (!program)
 	    ocl_err("clCreateProgramWithSource", last_ocl_error);
     }
-    
+
     last_ocl_error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         size_t len;
-        last_ocl_error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
 	clReleaseProgram(program);
-	Rf_error("clGetProgramBuildInfo failed (with %d): %s", last_ocl_error, buffer);
+	Rf_error("clBuildProgram failed (with %d): %s", last_ocl_error, buffer);
     }
 
     kernel = clCreateKernel(program, CHAR(STRING_ELT(k_name, 0)), &last_ocl_error);
@@ -377,7 +377,7 @@ SEXP ocl_call(SEXP args) {
 	    wdims[i] = INTEGER(dimVec)[i];
     }
     if (wdim < 1 || wdims[0] < 1 || (wdim > 1 && wdims[1] < 1) || (wdim > 2 && wdims[2] < 1))
-	Rf_error("invalid dimensions - muse be a numeric vector with positive values");
+	Rf_error("invalid dimensions - must be a numeric vector with positive values");
 
     args = CDR(args);
     occ = (ocl_call_context_t*) calloc(1, sizeof(ocl_call_context_t));
