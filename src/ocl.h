@@ -50,3 +50,16 @@ cl_mem getBuffer(SEXP buffer_exp);
 void clFreeKernel(SEXP k);
 SEXP mkKernel(cl_kernel k);
 cl_kernel getKernel(SEXP k);
+
+/* BUFFER HANDLING */
+/* Create an OpenCL buffer */
+SEXP cl_create_buffer(SEXP context_exp, SEXP length_exp, SEXP mode_exp);
+
+/* Retrieve the length of an OpenCL buffer */
+SEXP cl_get_buffer_length(SEXP buffer_exp);
+
+/* Read data from an OpenCL buffer */
+SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices);
+
+/* Write data to an OpenCL buffer */
+SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP values);
