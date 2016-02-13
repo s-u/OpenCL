@@ -279,11 +279,42 @@ SEXP ocl_call(SEXP args) {
     if (clSetKernelArg(kernel, an++, sizeof(on), &on) != CL_SUCCESS)
 	Rf_error("failed to set second kernel argument as output length in clSetKernelArg");
     while ((arg = CAR(args)) != R_NilValue) {
-        cl_mem argument = getBuffer(arg);
+        if (TYPEOF(arg) == EXTPTRSXP) {
+            // buffer argument
+            cl_mem argument = getBuffer(arg);
 
-        last_ocl_error = clSetKernelArg(kernel, an++, sizeof(cl_mem), &argument);
-	if (last_ocl_error != CL_SUCCESS)
-            Rf_error("Failed to set vector kernel argument %d (length=%d, error %d)", an, cl_get_buffer_length(arg), last_ocl_error);
+            last_ocl_error = clSetKernelArg(kernel, an++, sizeof(cl_mem), &argument);
+            if (last_ocl_error != CL_SUCCESS)
+                Rf_error("Failed to set vector kernel argument %d (length=%d, error %d)", an, cl_get_buffer_length(arg), last_ocl_error);
+        } else {
+            // single-value argument
+            if (LENGTH(arg) != 1)
+                Rf_error("Non-buffer arguments must be scalar values");
+            size_t size;
+            void* data;
+            switch (TYPEOF(arg)) {
+                case REALSXP:
+                    size = sizeof(double);
+                    data = REAL(arg);
+                    break;
+                case INTSXP:
+                    size = sizeof(int);
+                    data = INTEGER(arg);
+                    break;
+                case RAWSXP:
+                    if (inherits(arg, "clFloat")) {
+                        size = sizeof(float);
+                        data = RAW(arg);
+                        break;
+                    }
+                default:
+                    Rf_error("only numeric or integer scalar kernel arguments are supported");
+            }
+
+            last_ocl_error = clSetKernelArg(kernel, an++, size, data);
+            if (last_ocl_error != CL_SUCCESS)
+                Rf_error("Failed to set scalar kernel argument %d (error %d)", an, last_ocl_error);
+        }
 	args = CDR(args);
     }
 
