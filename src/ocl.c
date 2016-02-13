@@ -285,7 +285,7 @@ SEXP ocl_call(SEXP args) {
 
             last_ocl_error = clSetKernelArg(kernel, an++, sizeof(cl_mem), &argument);
             if (last_ocl_error != CL_SUCCESS)
-                Rf_error("Failed to set vector kernel argument %d (length=%d, error %d)", an, cl_get_buffer_length(arg), last_ocl_error);
+                Rf_error("Failed to set vector kernel argument %d (length=%d, error %d)", an, Rf_asInteger(cl_get_buffer_length(arg)), last_ocl_error);
         } else {
             // single-value argument
             if (LENGTH(arg) != 1)
