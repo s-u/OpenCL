@@ -71,7 +71,7 @@ oclContext <- function(device = "gpu") {
 oclSimpleKernel <- function(context, name, code, precision = c("single", "double", "best")) {
   precision <- match.arg(precision)
   if (precision == "best") { # detect supported precision from the device
-    precision <- if (any(grepl("cl_khr_fp64", oclInfo(device)$exts))) {
+    precision <- if (any(grepl("cl_khr_fp64", oclInfo(attributes(context)$device)$exts))) {
       code <- c("#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n", gsub("\\bfloat\\b", "double", code))
       "double"
     } else "single"
