@@ -10,6 +10,9 @@ as.clBuffer <- function(x, context) {
 as.double.clBuffer <- function(buffer, ...) {
     as.double(.Call("cl_read_buffer", buffer, "all"))
 }
+as.integer.clBuffer <- function(buffer, ...) {
+    as.integer(.Call("cl_read_buffer", buffer, "all"))
+}
 is.clBuffer <- function(x) inherits(x, "clBuffer")
 
 # Printing information about the buffer
