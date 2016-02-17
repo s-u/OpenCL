@@ -39,23 +39,24 @@
 }
 \usage{
 clBuffer(context, length, mode = "numeric")
-as.clBuffer(x, context)
-is.clBuffer(x)
-\method{as.double}{clBuffer}(buffer, \dots)
-\method{as.integer}{clBuffer}(buffer, \dots)
-\method{print}{clBuffer}(buffer, \dots)
-\method{length}{clBuffer}(buffer)
-\method{[}{clBuffer}(buffer, indices)
-\method{[}{clBuffer}(buffer, indices) <- values
+as.clBuffer(vector, context)
+is.clBuffer(any)
+\method{as.double}{clBuffer}(x, \dots)
+\method{as.integer}{clBuffer}(x, \dots)
+\method{print}{clBuffer}(x, \dots)
+\method{length}{clBuffer}(x)
+\method{[}{clBuffer}(x, indices)
+\method{[}{clBuffer}(x, indices) <- value
 }
 \arguments{
-  \item{x}{Arbitrary object}
   \item{context}{OpenCL context as created by \code{\link{oclContext}}}
   \item{length}{Length of the required buffer}
   \item{mode}{Mode of the buffer, can be one of "numeric", "clFloat", "integer"}
-  \item{buffer}{OpenCL buffer object (\code{clBuffer})}
+  \item{vector}{Numeric or integer vector or \code{clFloat} object}
+  \item{any}{Arbitrary object}
+  \item{x}{OpenCL buffer object (\code{clBuffer})}
   \item{indices}{Indices to access the buffer, must be omitted (as of now)}
-  \item{values}{New values}
+  \item{value}{New values}
   \item{\dots}{Arguments passed to subsequent methods}
 }
 %\value{

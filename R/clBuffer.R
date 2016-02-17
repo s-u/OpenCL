@@ -2,41 +2,41 @@
 clBuffer <- function(context, length, mode = "numeric")
     .Call("cl_create_buffer", context, length, mode)
 
-as.clBuffer <- function(x, context) {
-    buffer <- clBuffer(context, length(x), class(x))
-    buffer[] <- x
+as.clBuffer <- function(vector, context) {
+    buffer <- clBuffer(context, length(vector), class(vector))
+    buffer[] <- vector
     buffer
 }
-as.double.clBuffer <- function(buffer, ...) {
-    as.double(.Call("cl_read_buffer", buffer, "all"))
+as.double.clBuffer <- function(x, ...) {
+    as.double(.Call("cl_read_buffer", x, "all"))
 }
-as.integer.clBuffer <- function(buffer, ...) {
-    as.integer(.Call("cl_read_buffer", buffer, "all"))
+as.integer.clBuffer <- function(x, ...) {
+    as.integer(.Call("cl_read_buffer", x, "all"))
 }
-is.clBuffer <- function(x) inherits(x, "clBuffer")
+is.clBuffer <- function(any) inherits(any, "clBuffer")
 
 # Printing information about the buffer
-print.clBuffer <- function(buffer, ...) {
-    cat("OpenCL buffer,", length(buffer),
-        "elements of type", attributes(buffer)$mode, "\n");
-    print(.Call("cl_read_buffer", buffer, "all"), ...)
-    invisible(buffer)
+print.clBuffer <- function(x, ...) {
+    cat("OpenCL buffer,", length(x),
+        "elements of type", attributes(x)$mode, "\n");
+    print(.Call("cl_read_buffer", x, "all"), ...)
+    invisible(x)
 }
 
 # Get and modify length
-length.clBuffer<- function(buffer) {
-    .Call("cl_get_buffer_length", buffer)
+length.clBuffer<- function(x) {
+    .Call("cl_get_buffer_length", x)
 }
 # For now, we don't allow to modify the length.
 #"length<-.clFloatBuffer" <- function(x, value) {}
 
 # Retrieve and overwrite data
-`[.clBuffer` <- function(buffer, indices) {
+`[.clBuffer` <- function(x, indices) {
     if (missing(indices)) { indices = "all" }
-    .Call("cl_read_buffer", buffer, indices)
+    .Call("cl_read_buffer", x, indices)
 }
-`[<-.clBuffer` <- function(buffer, indices, values) {
+`[<-.clBuffer` <- function(x, indices, value) {
     if (missing(indices)) { indices = "all" }
-    values <- do.call(paste("as", attributes(buffer)$mode, sep="."), list(values))
-    .Call("cl_write_buffer", buffer, indices, values)
+    value <- do.call(paste("as", attributes(x)$mode, sep="."), list(value))
+    .Call("cl_write_buffer", x, indices, value)
 }
