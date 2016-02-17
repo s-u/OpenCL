@@ -80,8 +80,7 @@ oclSimpleKernel <- function(context, name, code, precision = c("single", "double
 }
 
 # Run a simple kernel and retrieve the result
-oclRun <- function(kernel, size, ..., native.result=FALSE, wait=TRUE, dim=size) .External("ocl_call", kernel, size, native.result, wait, dim, ...)
-oclResult <- function(context, wait = TRUE) .Call("ocl_collect_call", context, wait)
+oclRun <- function(kernel, size, ..., dim=size) .External("ocl_call", kernel, size, dim, ...)
 
 # Get extended information about OpenCL objects
 oclInfo <- function(item) UseMethod("oclInfo")

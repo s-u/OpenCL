@@ -229,7 +229,7 @@ SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP prec) {
 /* Implementation of oclRun */
 /* .External */
 SEXP ocl_call(SEXP args) {
-    int on, an = 0, ftype = FT_DOUBLE, async;
+    int on, an = 0, ftype = FT_DOUBLE;
     SEXP ker = CADR(args), olen, arg, res, dimVec;
     cl_kernel kernel = getKernel(ker);
     SEXP context_exp = getAttrib(ker, oclContextSymbol);
@@ -251,12 +251,6 @@ SEXP ocl_call(SEXP args) {
     on = Rf_asInteger(olen);
     if (on < 0)
 	Rf_error("invalid output length");
-
-    /* skip native.result */
-    args = CDR(args);
-
-    async = (Rf_asInteger(CAR(args)) == 1) ? 0 : 1;  /* wait */
-    args = CDR(args);
 
     dimVec = coerceVector(CAR(args), INTSXP);  /* dim */
     wdim = LENGTH(dimVec);
@@ -288,7 +282,7 @@ SEXP ocl_call(SEXP args) {
                 Rf_error("Failed to set vector kernel argument %d (length=%d, error %d)", an, Rf_asInteger(cl_get_buffer_length(arg)), last_ocl_error);
         } else {
             // single-value argument
-            if (LENGTH(arg) != 1)
+            if (!(LENGTH(arg) == 1 || (TYPEOF(arg) == RAWSXP && LENGTH(arg) == sizeof(float))))
                 Rf_error("Non-buffer arguments must be scalar values");
             size_t size;
             void* data;
