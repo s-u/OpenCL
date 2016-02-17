@@ -1,6 +1,11 @@
 # Conversions numeric <-> float
 clFloat <- function(x) .Call("double2float", x)
-as.clFloat <- function(x) .Call("double2float", x)
+as.clFloat <- function(x) {
+    if (inherits(x, "clFloat"))
+        x
+    else
+        .Call("double2float", x)
+}
 as.double.clFloat <- function(x, ...) .Call("float2double", x)
 is.clFloat <- function(x) inherits(x, "clFloat")
 as.integer.clFloat <- function(x, ...) as.integer(.Call("float2double", x), ...)

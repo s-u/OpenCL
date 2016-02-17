@@ -154,7 +154,9 @@ SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP values)
         (type == CLT_FLOAT && !inherits(values, "clFloat")))
         Rf_error("invalid input vector type");
     if (LENGTH(values) * get_sexp_element_size(type) != size)
-        Rf_error("invalid input length");
+        Rf_error("invalid input length: %d, expected %d",
+                 LENGTH(values) * get_sexp_element_size(type) / get_element_size(type),
+                 size / get_element_size(type));
 
     // Note that we do not have to block here.
     last_ocl_error = clEnqueueWriteBuffer(queue, buffer, CL_FALSE, 0, size,
