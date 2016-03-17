@@ -104,21 +104,8 @@ SEXP ocl_context(SEXP device_exp)
     return ctx_exp;
 }
 
-static char infobuf[2048];
-
-SEXP ocl_get_device_info_char(SEXP device, SEXP item) {
-    cl_device_id device_id = getDeviceID(device);
-    cl_device_info pn = (cl_device_info) Rf_asInteger(item);
-    cl_int last_ocl_error;
-
-    *infobuf = 0;
-    last_ocl_error = clGetDeviceInfo(device_id, pn, sizeof(infobuf), &infobuf, NULL);
-    if (last_ocl_error != CL_SUCCESS)
-	ocl_err("clGetDeviceInfo", last_ocl_error);
-    return Rf_mkString(infobuf);
-}
-
 static SEXP getDeviceInfo(cl_device_id device_id, cl_device_info di) {
+    char infobuf[2048];
     cl_int last_ocl_error = clGetDeviceInfo(device_id, di, sizeof(infobuf), &infobuf, NULL);
     if (last_ocl_error != CL_SUCCESS)
 	ocl_err("clGetDeviceInfo", last_ocl_error);
@@ -126,6 +113,7 @@ static SEXP getDeviceInfo(cl_device_id device_id, cl_device_info di) {
 }
 
 static SEXP getPlatformInfo(cl_platform_id platform_id, cl_device_info di) {
+    char infobuf[2048];
     cl_int last_ocl_error = clGetPlatformInfo(platform_id, di, sizeof(infobuf), &infobuf, NULL);
     if (last_ocl_error != CL_SUCCESS)
 	ocl_err("clGetPlatformInfo", last_ocl_error);
@@ -136,11 +124,14 @@ static SEXP getPlatformInfo(cl_platform_id platform_id, cl_device_info di) {
 SEXP ocl_get_device_info(SEXP device) {
     SEXP res;
     cl_device_id device_id = getDeviceID(device);
-    const char *names[] = { "name", "vendor", "version", "profile", "exts", "driver.ver" };
-    SEXP nv = PROTECT(Rf_allocVector(STRSXP, 6));
+    const char *names[] = { "name", "vendor", "version", "profile", "exts", "driver.ver", "max.frequency" };
+    size_t numAttr = sizeof(names) / sizeof(const char *);
+
+    SEXP nv = PROTECT(Rf_allocVector(STRSXP, numAttr));
     int i;
     for (i = 0; i < LENGTH(nv); i++) SET_STRING_ELT(nv, i, mkChar(names[i]));
-    res = PROTECT(Rf_allocVector(VECSXP, LENGTH(nv)));
+
+    res = PROTECT(Rf_allocVector(VECSXP, numAttr));
     Rf_setAttrib(res, R_NamesSymbol, nv);
     SET_VECTOR_ELT(res, 0, getDeviceInfo(device_id, CL_DEVICE_NAME));
     SET_VECTOR_ELT(res, 1, getDeviceInfo(device_id, CL_DEVICE_VENDOR));
@@ -148,6 +139,10 @@ SEXP ocl_get_device_info(SEXP device) {
     SET_VECTOR_ELT(res, 3, getDeviceInfo(device_id, CL_DEVICE_PROFILE));
     SET_VECTOR_ELT(res, 4, getDeviceInfo(device_id, CL_DEVICE_EXTENSIONS));
     SET_VECTOR_ELT(res, 5, getDeviceInfo(device_id, CL_DRIVER_VERSION));
+    cl_uint max_freq;
+    clGetDeviceInfo(device_id, CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(max_freq), &max_freq, NULL);
+    SET_VECTOR_ELT(res, 6, Rf_ScalarInteger(max_freq));
+
     UNPROTECT(2);
     return res;
 }

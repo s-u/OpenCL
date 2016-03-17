@@ -47,7 +47,7 @@ print.clKernel <- function(x, ...) {
 
 # Query platforms and devices
 oclPlatforms <- function() .Call("ocl_platforms")
-oclDevices <- function(platform = oclPlatforms()[[1]], type="default") .Call("ocl_devices", platform, type)
+oclDevices <- function(platform = oclPlatforms()[[1]], type="gpu") .Call("ocl_devices", platform, type)
 
 # Create a context
 oclContext <- function(device = "gpu") {
@@ -58,12 +58,13 @@ oclContext <- function(device = "gpu") {
         if (length(candidates) < 1)
             stop("No devices found")
 
-        # Choose last candidate in case of multiple GPUs.
+        # Choose the "fastest" candidate in case of multiple GPUs.
         # (We might use a better mechanism in the future)
         # Anyway, alert the user that our choice was ambigous.
         if (length(candidates) > 1)
-            warning("Found more than one device, choosing the last one")
-        oclContext(candidates[[length(candidates)]])
+            warning("Found more than one device, choosing the fastest")
+        freqs <- as.numeric(lapply(oclInfo(candidates), function(info) info$max.frequency))
+        oclContext(candidates[[which.max(freqs)]])
     }
 }
 
