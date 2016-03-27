@@ -168,9 +168,6 @@ SEXP ocl_get_platform_info(SEXP platform) {
 
 static char buffer[2048]; /* kernel build error buffer */
 
-#define FT_SINGLE 0
-#define FT_DOUBLE 1
-
 /* Implementation of oclSimpleKernel */
 SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP prec) {
     cl_context ctx = getContext(context);
@@ -224,7 +221,8 @@ SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP prec) {
 /* Implementation of oclRun */
 /* .External */
 SEXP ocl_call(SEXP args) {
-    int on, an = 0, ftype = FT_DOUBLE;
+    int on, an = 0;
+    ClType ftype = CLT_DOUBLE;
     SEXP ker = CADR(args), olen, arg, res, dimVec;
     cl_kernel kernel = getKernel(ker);
     SEXP context_exp = getAttrib(ker, oclContextSymbol);
@@ -239,7 +237,7 @@ SEXP ocl_call(SEXP args) {
     /* Get kernel precision */
     res = Rf_getAttrib(ker, install("precision"));
     if (TYPEOF(res) == STRSXP && LENGTH(res) == 1 && CHAR(STRING_ELT(res, 0))[0] != 'd')
-	ftype = FT_SINGLE;
+	ftype = CLT_FLOAT;
 
     olen = CAR(args);  /* size */
     args = CDR(args);
@@ -261,7 +259,7 @@ SEXP ocl_call(SEXP args) {
     args = CDR(args);
 
     SEXP resultbuf = PROTECT(cl_create_buffer(context_exp, olen,
-        Rf_mkString((ftype == FT_SINGLE) ? "clFloat" : "numeric")));
+        Rf_mkString((ftype == CLT_FLOAT) ? "single" : "double")));
     output = (cl_mem)R_ExternalPtrAddr(resultbuf);
     if (clSetKernelArg(kernel, an++, sizeof(cl_mem), &output) != CL_SUCCESS)
 	Rf_error("failed to set first kernel argument as output in clSetKernelArg");
@@ -277,25 +275,27 @@ SEXP ocl_call(SEXP args) {
                 Rf_error("Failed to set vector kernel argument %d (length=%d, error %d)", an, Rf_asInteger(cl_get_buffer_length(arg)), last_ocl_error);
         } else {
             // single-value argument
-            if (!(LENGTH(arg) == 1 || (TYPEOF(arg) == RAWSXP && LENGTH(arg) == sizeof(float))))
+            if (LENGTH(arg) != 1)
                 Rf_error("Non-buffer arguments must be scalar values");
             size_t size;
             void* data;
+            float intermediate;
             switch (TYPEOF(arg)) {
                 case REALSXP:
-                    size = sizeof(double);
-                    data = REAL(arg);
+                    if (ftype == CLT_FLOAT) {
+                        size = sizeof(float);
+                        intermediate = (float)*REAL(arg);
+                        data = &intermediate;
+                    }
+                    else {
+                        size = sizeof(double);
+                        data = REAL(arg);
+                    }
                     break;
                 case INTSXP:
                     size = sizeof(int);
                     data = INTEGER(arg);
                     break;
-                case RAWSXP:
-                    if (inherits(arg, "clFloat")) {
-                        size = sizeof(float);
-                        data = RAW(arg);
-                        break;
-                    }
                 default:
                     Rf_error("only numeric or integer scalar kernel arguments are supported");
             }

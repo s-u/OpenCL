@@ -34,6 +34,9 @@ oclSimpleKernel(context, name, code, precision = c("single", "double", "best"))
   argument of the kernel must be \code{__global double*} or
   \code{__global float*} for the output and the second argument must be
   \code{const unsigned int} for the length of the output vector.
+  Additional numeric scalar arguments are assumed to have the same mode as the
+  output, i.e. if the output shall have "double" precision, then numeric scalar
+  arguments are assumed to be double values, similarly for single-precision.
   All additional arguments are optional. See \code{\link{oclRun}} for an
   example of a simple kernel.
 

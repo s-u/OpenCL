@@ -12,9 +12,9 @@
 > class(buf)
 [1] "clBuffer"
 > print(attributes(buf)$mode)
-[1] "numeric"
+[1] "double"
 > print(buf)
-OpenCL buffer, 16 elements of type numeric
+OpenCL buffer, 16 elements of type double
  [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
 > length(buf)
 [1] 16
@@ -38,7 +38,7 @@ OpenCL buffer, 32 elements of type integer
 > # 3. Let's see if we can guess the type correctly
 > numeric.buf <- as.clBuffer(sqrt(3:18), ctx)
 > print(numeric.buf)
-OpenCL buffer, 16 elements of type numeric
+OpenCL buffer, 16 elements of type double
  [1] 1.732051 2.000000 2.236068 2.449490 2.645751 2.828427 3.000000 3.162278
  [9] 3.316625 3.464102 3.605551 3.741657 3.872983 4.000000 4.123106 4.242641
 > integer.buf <- as.clBuffer(-1:14, ctx)

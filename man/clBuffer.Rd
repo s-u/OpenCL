@@ -17,7 +17,7 @@
   \code{\link{oclRun}} and its return type are OpenCL buffers.
 
   Just like vectors in R, OpenCL buffers have a mode, which is (as of now) one
-  of "numeric" (corresponds to \code{double} in OpenCL C), "clFloat"
+  of "double" or "numeric" (corresponds to \code{double} in OpenCL C), "single"
   (\code{float}) or "integer" (\code{int}).
 
   The constructor \code{clBuffer} takes a context as created by

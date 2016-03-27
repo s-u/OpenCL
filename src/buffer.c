@@ -13,8 +13,10 @@ static ClType get_type(SEXP mode_exp)
     const char* mode = CHAR(STRING_ELT(mode_exp, 0));
     if (!strcmp(mode, "integer"))
         return CLT_INT;
-    if (!strcmp(mode, "clFloat"))
+    if (!strcmp(mode, "single"))
         return CLT_FLOAT;
+    if (!strcmp(mode, "double"))
+        return CLT_DOUBLE;
     if (!strcmp(mode, "numeric"))  // TODO: decide based on device capabilities
         return CLT_DOUBLE;
     Rf_error("invalid mode");
@@ -25,8 +27,8 @@ static SEXP get_type_description(ClType type)
 {
     switch (type) {
     case CLT_INT: return Rf_mkString("integer");
-    case CLT_FLOAT: return Rf_mkString("clFloat");
-    case CLT_DOUBLE: return Rf_mkString("numeric");
+    case CLT_FLOAT: return Rf_mkString("single");
+    case CLT_DOUBLE: return Rf_mkString("double");
     default: return R_NilValue;
     }
 }
@@ -42,26 +44,36 @@ static size_t get_element_size(ClType type)
     }
 }
 
-/* Get size of a single SEXP vector element corresponding to the type */
-static size_t get_sexp_element_size(ClType type)
-{
-    switch (type) {
-    case CLT_INT: return sizeof(int);
-    case CLT_FLOAT: return sizeof(Rbyte);
-    case CLT_DOUBLE: return sizeof(double);
-    default: return 0;
-    }
-}
-
 /* Translate type to corresponding SEXP type */
 static SEXPTYPE get_sexptype(ClType type)
 {
     switch (type) {
     case CLT_INT: return INTSXP;
-    case CLT_FLOAT: return RAWSXP;
+    case CLT_FLOAT: return REALSXP;
     case CLT_DOUBLE: return REALSXP;
     default: return ANYSXP;     // dummy return value
     }
+}
+
+/* FLOAT <-> DOUBLE CONVERSION with NAs */
+static uint32_t cl_NaFloat = 0x7ff007a2;   /* 0x7A2 = 1954, as in R_NaReal */
+
+/* Convert float to double value */
+static inline double to_double(float value)
+{
+    if (memcmp(&value, &cl_NaFloat, sizeof(float)))
+        return (double)value;
+    else
+        return R_NaReal;
+}
+
+/* Convert double to float */
+static inline float to_float(double value)
+{
+    if (memcmp(&value, &R_NaReal, sizeof(double)))
+        return (float)value;
+    else
+        return cl_NaFloat;
 }
 
 /* Create an OpenCL buffer */
@@ -105,8 +117,9 @@ SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
     SEXP queue_exp = Rf_getAttrib(context_exp, oclQueueSymbol);
     cl_command_queue queue = getCommandQueue(queue_exp);
     ClType type = (ClType)Rf_asInteger(R_ExternalPtrTag(buffer_exp));
-    size_t size;
+    size_t size, length;
     SEXP res;
+    float *intermediate;
     cl_int last_ocl_error;
 
     // TODO: Use indices!
@@ -116,16 +129,26 @@ SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
 
     // Get buffer size
     clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+    length = size / get_element_size(type);
 
     // Allocate appropriately sized target buffer
-    res = PROTECT(Rf_allocVector(get_sexptype(type), size / get_sexp_element_size(type)));
+    res = PROTECT(Rf_allocVector(get_sexptype(type), length));
     if (type == CLT_FLOAT)
-        Rf_setAttrib(res, R_ClassSymbol, Rf_mkString("clFloat"));
+        intermediate = (float*)calloc(length, sizeof(float));
 
     last_ocl_error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, size,
-                                         RAW(res), 0, NULL, NULL);
-    if (!buffer)
+        (type == CLT_FLOAT) ? (Rbyte*)intermediate : RAW(res), 0, NULL, NULL);
+    if (last_ocl_error != CL_SUCCESS)
         ocl_err("clEnqueueReadBuffer", last_ocl_error);
+
+    if (type == CLT_FLOAT) {
+        /* Convert to double values */
+        size_t i;
+        double *result = REAL(res);
+        for (i = 0; i < length; i++)
+            result[i] = to_double(intermediate[i]);
+        free(intermediate);
+    }
 
     UNPROTECT(1);
     return res;
@@ -139,7 +162,8 @@ SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP values)
     SEXP queue_exp = Rf_getAttrib(context_exp, oclQueueSymbol);
     cl_command_queue queue = getCommandQueue(queue_exp);
     ClType type = (ClType)Rf_asInteger(R_ExternalPtrTag(buffer_exp));
-    size_t size;
+    size_t size, length;
+    float *intermediate;
     cl_int last_ocl_error;
 
     // TODO: Use indices!
@@ -148,21 +172,31 @@ SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP values)
 
     // Get buffer size
     clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+    length = size / get_element_size(type);
 
     // Check input data
-    if (TYPEOF(values) != get_sexptype(type) ||
-        (type == CLT_FLOAT && !inherits(values, "clFloat")))
-        Rf_error("invalid input vector type");
-    if (LENGTH(values) * get_sexp_element_size(type) != size)
-        Rf_error("invalid input length: %d, expected %d",
-                 LENGTH(values) * get_sexp_element_size(type) / get_element_size(type),
-                 size / get_element_size(type));
+    if (TYPEOF(values) != get_sexptype(type))
+        Rf_error("invalid input vector type: %d", TYPEOF(values));
+    if (LENGTH(values) != length)
+        Rf_error("invalid input length: %d, expected %d", LENGTH(values), length);
+
+    if (type == CLT_FLOAT) {
+        /* Convert to double values */
+        intermediate = (float*)calloc(length, sizeof(float));
+        size_t i;
+        double *input = REAL(values);
+        for (i = 0; i < length; i++)
+            intermediate[i] = to_float(input[i]);
+    }
 
     // Note that we do not have to block here.
-    last_ocl_error = clEnqueueWriteBuffer(queue, buffer, CL_FALSE, 0, size,
-                                          RAW(values), 0, NULL, NULL);
+    last_ocl_error = clEnqueueWriteBuffer(queue, buffer, CL_TRUE, 0, size,
+        (type == CLT_FLOAT) ? (Rbyte*)intermediate : RAW(values), 0, NULL, NULL);
     if (last_ocl_error != CL_SUCCESS)
         ocl_err("clEnqueueWriteBuffer", last_ocl_error);
+
+    if (type == CLT_FLOAT)
+        free(intermediate);
 
     return buffer_exp;
 }
