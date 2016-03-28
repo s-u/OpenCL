@@ -38,7 +38,7 @@
   select \code{buf[]}.
 }
 \usage{
-clBuffer(context, length, mode = "numeric")
+clBuffer(context, length, mode = c("numeric", "single", "double", "integer"))
 as.clBuffer(vector, context)
 is.clBuffer(any)
 \method{as.double}{clBuffer}(x, \dots)

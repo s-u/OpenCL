@@ -1,6 +1,9 @@
 # Creating a buffer in a context
-clBuffer <- function(context, length, mode = "numeric")
+clBuffer <- function(context, length, mode = c("numeric", "single", "double", "integer"))
+{
+    mode <- match.arg(mode)
     .Call("cl_create_buffer", context, length, mode)
+}
 
 as.clBuffer <- function(vector, context) {
     buffer <- clBuffer(context, length(vector), class(vector))
