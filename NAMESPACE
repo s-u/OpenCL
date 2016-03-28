@@ -1,6 +1,5 @@
 useDynLib(OpenCL)
 exportPattern("^ocl")
-exportPattern("clFloat$")
 exportPattern("clBuffer$")
 
 S3method(print, clDeviceID)
