@@ -5,7 +5,7 @@
 #include <Rinternals.h>
 
 /* Translate description string to internal type */
-static ClType get_type(SEXP mode_exp)
+ClType get_type(SEXP mode_exp)
 {
     if (TYPEOF(mode_exp) != STRSXP || LENGTH(mode_exp) != 1)
         Rf_error("invalid mode");
@@ -23,7 +23,7 @@ static ClType get_type(SEXP mode_exp)
 }
 
 /* Translate internal type to description string */
-static SEXP get_type_description(ClType type)
+SEXP get_type_description(ClType type)
 {
     switch (type) {
     case CLT_INT: return Rf_mkString("integer");

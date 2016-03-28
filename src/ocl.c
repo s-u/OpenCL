@@ -169,7 +169,7 @@ SEXP ocl_get_platform_info(SEXP platform) {
 static char buffer[2048]; /* kernel build error buffer */
 
 /* Implementation of oclSimpleKernel */
-SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP prec) {
+SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP mode) {
     cl_context ctx = getContext(context);
     cl_device_id device = getDeviceID(getAttrib(context, oclDeviceSymbol));
     cl_program program;
@@ -180,8 +180,8 @@ SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP prec) {
 	Rf_error("invalid kernel name");
     if (TYPEOF(code) != STRSXP || LENGTH(code) < 1)
 	Rf_error("invalid kernel code");
-    if (TYPEOF(prec) != STRSXP || LENGTH(prec) != 1)
-	Rf_error("invalid precision specification");
+    if (TYPEOF(mode) != STRSXP || LENGTH(mode) != 1)
+	Rf_error("invalid output mode specification");
 
     {
 	int sn = LENGTH(code), i;
@@ -211,7 +211,7 @@ SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP prec) {
     {
 	SEXP sk = PROTECT(mkKernel(kernel));
 	Rf_setAttrib(sk, oclContextSymbol, context);
-	Rf_setAttrib(sk, oclPrecisionSymbol, prec);
+	Rf_setAttrib(sk, oclModeSymbol, mode);
 	Rf_setAttrib(sk, oclNameSymbol, k_name);
 	UNPROTECT(1);
 	return sk;
@@ -223,7 +223,7 @@ SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP prec) {
 SEXP ocl_call(SEXP args) {
     int on, an = 0;
     ClType ftype = CLT_DOUBLE;
-    SEXP ker = CADR(args), olen, arg, res, dimVec;
+    SEXP ker = CADR(args), olen, arg, dimVec;
     cl_kernel kernel = getKernel(ker);
     SEXP context_exp = getAttrib(ker, oclContextSymbol);
     cl_command_queue commands = getCommandQueue(getAttrib(context_exp, oclQueueSymbol));
@@ -235,9 +235,7 @@ SEXP ocl_call(SEXP args) {
     /* Get (optional) arguments */
     args = CDDR(args);
     /* Get kernel precision */
-    res = Rf_getAttrib(ker, install("precision"));
-    if (TYPEOF(res) == STRSXP && LENGTH(res) == 1 && CHAR(STRING_ELT(res, 0))[0] != 'd')
-	ftype = CLT_FLOAT;
+    ftype = get_type(Rf_getAttrib(ker, oclModeSymbol));
 
     olen = CAR(args);  /* size */
     args = CDR(args);
@@ -258,8 +256,7 @@ SEXP ocl_call(SEXP args) {
 	Rf_error("invalid dimensions - must be a numeric vector with positive values");
     args = CDR(args);
 
-    SEXP resultbuf = PROTECT(cl_create_buffer(context_exp, olen,
-        Rf_mkString((ftype == CLT_FLOAT) ? "single" : "double")));
+    SEXP resultbuf = PROTECT(cl_create_buffer(context_exp, olen, Rf_getAttrib(ker, oclModeSymbol)));
     output = (cl_mem)R_ExternalPtrAddr(resultbuf);
     if (clSetKernelArg(kernel, an++, sizeof(cl_mem), &output) != CL_SUCCESS)
 	Rf_error("failed to set first kernel argument as output in clSetKernelArg");

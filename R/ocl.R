@@ -69,15 +69,15 @@ oclContext <- function(device = "gpu") {
 }
 
 # Compile a "simple kernel"
-oclSimpleKernel <- function(context, name, code, precision = c("single", "double", "best")) {
-  precision <- match.arg(precision)
-  if (precision == "best") { # detect supported precision from the device
-    precision <- if (any(grepl("cl_khr_fp64", oclInfo(attributes(context)$device)$exts))) {
+oclSimpleKernel <- function(context, name, code, output.mode = c("single", "double", "integer", "best")) {
+  output.mode <- match.arg(output.mode)
+  if (output.mode == "best") { # detect supported precision from the device
+    output.mode <- if (any(grepl("cl_khr_fp64", oclInfo(attributes(context)$device)$exts))) {
       code <- c("#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n", gsub("\\bfloat\\b", "double", code))
       "double"
     } else "single"
   }
-  .Call("ocl_ez_kernel", context, name, code, precision)
+  .Call("ocl_ez_kernel", context, name, code, output.mode)
 }
 
 # Run a simple kernel and retrieve the result

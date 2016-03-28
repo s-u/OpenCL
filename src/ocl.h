@@ -10,7 +10,6 @@ typedef struct SEXPREC* SEXP;
 extern SEXP oclDeviceSymbol;
 extern SEXP oclQueueSymbol;
 extern SEXP oclContextSymbol;
-extern SEXP oclPrecisionSymbol;
 extern SEXP oclNameSymbol;
 extern SEXP oclModeSymbol;
 
@@ -52,6 +51,10 @@ SEXP mkKernel(cl_kernel k);
 cl_kernel getKernel(SEXP k);
 
 /* BUFFER HANDLING */
+/* Mode string <-> buffer type */
+ClType get_type(SEXP mode_exp);
+SEXP get_type_description(ClType type);
+
 /* Create an OpenCL buffer */
 SEXP cl_create_buffer(SEXP context_exp, SEXP length_exp, SEXP mode_exp);
 

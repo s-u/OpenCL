@@ -8,7 +8,8 @@
   The kernel can then be used in \code{\link{oclRun}}.
 }
 \usage{
-oclSimpleKernel(context, name, code, precision = c("single", "double", "best"))
+oclSimpleKernel(context, name, code,
+    output.mode = c("single", "double", "integer", "best"))
 }
 \arguments{
   \item{context}{Context (as created by \code{\link{oclContext}})
@@ -18,8 +19,9 @@ oclSimpleKernel(context, name, code, precision = c("single", "double", "best"))
     the supplied code.}
   \item{code}{Character vector containing the code. The code will be
     concatenated (as-is, no newlines are added!) by the engine.}
-  \item{precision}{Precision of the result floating-point argument in the
-    kernel. If "best" is used then the kernel code is expected to
+  \item{output.mode}{Mode of the output argument of the kernel, as in
+    \code{\link{clBuffer}}. This can be one of "single", "double", "integer",
+    or "best". If "best" is used then the kernel code is expected to
     use single-precision but it will be automatically augmented to
     double-precision (by replacing words "float" with "double" in the
     code and adding the \code{cl_khr_fp64} pragma) if supported by the
