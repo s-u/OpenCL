@@ -2,6 +2,8 @@
 clBuffer <- function(context, length, mode = c("numeric", "single", "double", "integer"))
 {
     mode <- match.arg(mode)
+    if (mode == "numeric")
+        mode <- attributes(context)$precision
     .Call("cl_create_buffer", context, length, mode)
 }
 

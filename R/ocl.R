@@ -18,6 +18,7 @@ print.clContext <- function(x, ...) {
   print.default(x, ...)
   cat("  Device: "); print(attr$device)
   cat("  Queue: ");  print(attr$queue)
+  cat("  Default precision: ", attr$precision, "\n", sep='')
   attributes(x) <- attr
   invisible(x)
 }
@@ -50,10 +51,9 @@ oclPlatforms <- function() .Call("ocl_platforms")
 oclDevices <- function(platform = oclPlatforms()[[1]], type="gpu") .Call("ocl_devices", platform, type)
 
 # Create a context
-oclContext <- function(device = "gpu") {
-    if (class(device) == "clDeviceID") {
-        .Call("ocl_context", device)
-    } else {
+oclContext <- function(device = "gpu", precision = c("best", "single", "double")) {
+    # Choose device, if user was too lazy
+    if (class(device) != "clDeviceID") {
         candidates <- oclDevices(type=device)
         if (length(candidates) < 1)
             stop("No devices found")
@@ -64,18 +64,31 @@ oclContext <- function(device = "gpu") {
         if (length(candidates) > 1)
             warning("Found more than one device, choosing the fastest")
         freqs <- as.numeric(lapply(oclInfo(candidates), function(info) info$max.frequency))
-        oclContext(candidates[[which.max(freqs)]])
+        device <- candidates[[which.max(freqs)]]
     }
+
+    # Create context
+    context <- .Call("ocl_context", device)
+
+    # Find precision
+    precision <- match.arg(precision)
+    if (precision == "best") {
+        precision <- ifelse(
+            any(oclInfo(device)$exts == "cl_khr_fp64"),
+            "double", "single")
+    }
+    attributes(context)[["precision"]] = precision
+
+    context
 }
 
 # Compile a "simple kernel"
-oclSimpleKernel <- function(context, name, code, output.mode = c("single", "double", "integer", "best")) {
+oclSimpleKernel <- function(context, name, code, output.mode = c("numeric", "single", "double", "integer")) {
   output.mode <- match.arg(output.mode)
-  if (output.mode == "best") { # detect supported precision from the device
-    output.mode <- if (any(oclInfo(attributes(context)$device)$exts == "cl_khr_fp64")) {
+  if (output.mode == "numeric") {
+    output.mode <- attributes(context)$precision
+    if (output.mode == "double")
       code <- c("#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n", gsub("\\bfloat\\b", "double", code))
-      "double"
-    } else "single"
   }
   .Call("ocl_ez_kernel", context, name, code, output.mode)
 }

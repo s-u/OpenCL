@@ -10,12 +10,15 @@ Create an OpenCL context for a given device.
   context with \code{\link{oclSimpleKernel}}.
 }
 \usage{
-oclContext(device = "gpu")
+oclContext(device = "gpu", precision = c("best", "single", "double"))
 }
 \arguments{
   \item{device}{Device object as obtained from \code{\link{oclDevices}} or a
   type as in \code{\link{oclDevices}}. In this case, a suitable device of the
   given type will be selected automatically.}
+  \item{precision}{Default precision of the context. This is the precision that
+  will be chosen by default for \code{numeric} buffers and kernels with
+  \code{numeric} output mode.}
 }
 %\details{
 %}

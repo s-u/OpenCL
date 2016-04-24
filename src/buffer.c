@@ -17,8 +17,6 @@ ClType get_type(SEXP mode_exp)
         return CLT_FLOAT;
     if (!strcmp(mode, "double"))
         return CLT_DOUBLE;
-    if (!strcmp(mode, "numeric"))  // TODO: decide based on device capabilities
-        return CLT_DOUBLE;
     Rf_error("invalid mode");
 }
 

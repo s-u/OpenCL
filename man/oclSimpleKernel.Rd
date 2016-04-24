@@ -9,7 +9,7 @@
 }
 \usage{
 oclSimpleKernel(context, name, code,
-    output.mode = c("single", "double", "integer", "best"))
+    output.mode = c("numeric", "single", "double", "integer"))
 }
 \arguments{
   \item{context}{Context (as created by \code{\link{oclContext}})
@@ -21,11 +21,11 @@ oclSimpleKernel(context, name, code,
     concatenated (as-is, no newlines are added!) by the engine.}
   \item{output.mode}{Mode of the output argument of the kernel, as in
     \code{\link{clBuffer}}. This can be one of "single", "double", "integer",
-    or "best". If "best" is used then the kernel code is expected to
+    or "numeric". If "numeric" is used then the kernel code is expected to
     use single-precision but it will be automatically augmented to
     double-precision (by replacing words "float" with "double" in the
-    code and adding the \code{cl_khr_fp64} pragma) if supported by the
-    device.}
+    code and adding the \code{cl_khr_fp64} pragma) if that is the default
+    precision of the context.}
 }
 \details{
   \code{oclSimpleKernel} builds the program specified by \code{code} and
