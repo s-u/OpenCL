@@ -72,7 +72,7 @@ oclContext <- function(device = "gpu") {
 oclSimpleKernel <- function(context, name, code, output.mode = c("single", "double", "integer", "best")) {
   output.mode <- match.arg(output.mode)
   if (output.mode == "best") { # detect supported precision from the device
-    output.mode <- if (any(grepl("cl_khr_fp64", oclInfo(attributes(context)$device)$exts))) {
+    output.mode <- if (any(oclInfo(attributes(context)$device)$exts == "cl_khr_fp64")) {
       code <- c("#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n", gsub("\\bfloat\\b", "double", code))
       "double"
     } else "single"
@@ -85,6 +85,10 @@ oclRun <- function(kernel, size, ..., dim=size) .External("ocl_call", kernel, si
 
 # Get extended information about OpenCL objects
 oclInfo <- function(item) UseMethod("oclInfo")
-oclInfo.clDeviceID <- function(item) .Call("ocl_get_device_info", item)
+oclInfo.clDeviceID <- function(item) {
+    info <- .Call("ocl_get_device_info", item)
+    info$exts <- unlist(strsplit(info$exts, " "))
+    info
+}
 oclInfo.clPlatformID <- function(item) .Call("ocl_get_platform_info", item)
 oclInfo.list <- function(item) lapply(item, oclInfo)
