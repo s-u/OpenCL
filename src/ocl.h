@@ -32,12 +32,10 @@ SEXP mkDeviceID(cl_device_id id);
 cl_device_id getDeviceID(SEXP device);
 
 /* Encapsulation of a cl_context as SEXP */
-void clFreeContext(SEXP ctx);
 SEXP mkContext(cl_context ctx);
 cl_context getContext(SEXP ctx);
 
 /* Encapsulation of a cl_command_queue as SEXP */
-void clFreeCommandQueue(SEXP k);
 SEXP mkCommandQueue(cl_command_queue queue);
 cl_command_queue getCommandQueue(SEXP queue_exp);
 
@@ -46,7 +44,6 @@ SEXP mkBuffer(cl_mem buffer, ClType type);
 cl_mem getBuffer(SEXP buffer_exp);
 
 /* Encapsulation of a cl_kernel as SEXP */
-void clFreeKernel(SEXP k);
 SEXP mkKernel(cl_kernel k);
 cl_kernel getKernel(SEXP k);
 

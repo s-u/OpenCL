@@ -55,7 +55,7 @@ cl_device_id getDeviceID(SEXP device) {
 }
 
 /* Encapsulation of a cl_context as SEXP */
-void clFreeContext(SEXP ctx) {
+static void clFreeContext(SEXP ctx) {
     clReleaseContext((cl_context)R_ExternalPtrAddr(ctx));
 }
 
@@ -76,7 +76,7 @@ cl_context getContext(SEXP ctx) {
 }
 
 /* Encapsulation of a cl_command_queue as SEXP */
-void clFreeCommandQueue(SEXP k) {
+static void clFreeCommandQueue(SEXP k) {
     clReleaseCommandQueue((cl_command_queue)R_ExternalPtrAddr(k));
 }
 
@@ -119,7 +119,7 @@ cl_mem getBuffer(SEXP buffer_exp) {
 }
 
 /* Encapsulation of a cl_kernel as SEXP */
-void clFreeKernel(SEXP k) {
+static void clFreeKernel(SEXP k) {
     clReleaseKernel((cl_kernel)R_ExternalPtrAddr(k));
 }
 
