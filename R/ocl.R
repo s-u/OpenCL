@@ -84,12 +84,21 @@ oclContext <- function(device = "gpu", precision = c("best", "single", "double")
 
 # Compile a "simple kernel"
 oclSimpleKernel <- function(context, name, code, output.mode = c("numeric", "single", "double", "integer")) {
-  output.mode <- match.arg(output.mode)
-  if (output.mode == "numeric") {
-    output.mode <- attributes(context)$precision
+    output.mode <- match.arg(output.mode)
+    # Handle "numeric" type
+    if (output.mode == "numeric")
+        output.mode <- attributes(context)$precision
+
+    # Add typedef for numeric and enable double precision extension, if required.
     if (output.mode == "double")
-      code <- c("#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n", gsub("\\bfloat\\b", "double", code))
-  }
+        code <- c(
+            "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n",
+            "typedef double numeric;\n",
+            code)
+    else    # output.mode == "single"
+        code <- c(
+            "typedef float numeric;\n",
+            code)
   .Call("ocl_ez_kernel", context, name, code, output.mode)
 }
 

@@ -21,11 +21,13 @@ oclSimpleKernel(context, name, code,
     concatenated (as-is, no newlines are added!) by the engine.}
   \item{output.mode}{Mode of the output argument of the kernel, as in
     \code{\link{clBuffer}}. This can be one of "single", "double", "integer",
-    or "numeric". If "numeric" is used then the kernel code is expected to
-    use single-precision but it will be automatically augmented to
-    double-precision (by replacing words "float" with "double" in the
-    code and adding the \code{cl_khr_fp64} pragma) if that is the default
-    precision of the context.}
+    or "numeric". The default value "numeric" maps to the default precision of
+    the context.
+
+    The kernel code may use a type \code{numeric} that is typedef'd to the
+    given precision, i.e. either \code{float} or \code{double}. The OpenCL
+    extension \code{cl_khr_fp64} will be enabled automatically in the second
+    case, so you don't have to add the pragma yourself.}
 }
 \details{
   \code{oclSimpleKernel} builds the program specified by \code{code} and
