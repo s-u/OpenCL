@@ -12,6 +12,7 @@ extern SEXP oclQueueSymbol;
 extern SEXP oclContextSymbol;
 extern SEXP oclNameSymbol;
 extern SEXP oclModeSymbol;
+extern SEXP oclEventSymbol;
 
 /* Supported buffer data types */
 typedef enum {
@@ -46,6 +47,10 @@ cl_mem getBuffer(SEXP buffer_exp);
 /* Encapsulation of a cl_kernel as SEXP */
 SEXP mkKernel(cl_kernel k);
 cl_kernel getKernel(SEXP k);
+
+/* Encapsulation of a cl_event as SEXP */
+SEXP mkEvent(cl_event event);
+cl_event getEvent(SEXP event_exp);
 
 /* BUFFER HANDLING */
 /* Mode string <-> buffer type */

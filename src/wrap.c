@@ -8,6 +8,7 @@ SEXP oclQueueSymbol;
 SEXP oclContextSymbol;
 SEXP oclNameSymbol;
 SEXP oclModeSymbol;
+SEXP oclEventSymbol;
 
 /* Install symbols */
 __attribute__((constructor)) static void installSymbols()
@@ -17,6 +18,7 @@ __attribute__((constructor)) static void installSymbols()
     oclContextSymbol = Rf_install("context");
     oclNameSymbol = Rf_install("name");
     oclModeSymbol = Rf_install("mode");
+    oclEventSymbol = Rf_install("event");
 }
 
 void ocl_err(const char *str, cl_int error_code) {
@@ -137,4 +139,25 @@ cl_kernel getKernel(SEXP k) {
 	TYPEOF(k) != EXTPTRSXP)
 	Rf_error("invalid OpenCL kernel");
     return (cl_kernel)R_ExternalPtrAddr(k);
+}
+
+/* Encapsulation of a cl_event as SEXP */
+static void clFreeEvent(SEXP event_exp) {
+    clReleaseEvent((cl_event)R_ExternalPtrAddr(event_exp));
+}
+
+SEXP mkEvent(cl_event event) {
+    SEXP ptr;
+    ptr = PROTECT(R_MakeExternalPtr(event, R_NilValue, R_NilValue));
+    R_RegisterCFinalizerEx(ptr, clFreeEvent, TRUE);
+    Rf_setAttrib(ptr, R_ClassSymbol, mkString("clEvent"));
+    UNPROTECT(1);
+    return ptr;
+}
+
+cl_event getEvent(SEXP event_exp) {
+    if (!Rf_inherits(event_exp, "clEvent") ||
+        TYPEOF(event_exp) != EXTPTRSXP)
+        Rf_error("invalid OpenCL event");
+    return (cl_event)R_ExternalPtrAddr(event_exp);
 }
