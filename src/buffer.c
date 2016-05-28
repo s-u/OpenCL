@@ -115,6 +115,8 @@ SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
     SEXP queue_exp = Rf_getAttrib(context_exp, oclQueueSymbol);
     cl_command_queue queue = getCommandQueue(queue_exp);
     ClType type = (ClType)Rf_asInteger(R_ExternalPtrTag(buffer_exp));
+    SEXP wait_exp = Rf_getAttrib(buffer_exp, oclEventSymbol);
+    cl_event wait = (TYPEOF(wait_exp) == EXTPTRSXP) ? getEvent(wait_exp) : NULL;
     size_t size, length;
     SEXP res;
     float *intermediate;
@@ -135,7 +137,7 @@ SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
         intermediate = (float*)calloc(length, sizeof(float));
 
     last_ocl_error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, size,
-        (type == CLT_FLOAT) ? (Rbyte*)intermediate : RAW(res), 0, NULL, NULL);
+        (type == CLT_FLOAT) ? (Rbyte*)intermediate : RAW(res), wait ? 1 : 0, wait ? &wait : NULL, NULL);
     if (last_ocl_error != CL_SUCCESS)
         ocl_err("clEnqueueReadBuffer", last_ocl_error);
 

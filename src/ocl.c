@@ -228,6 +228,8 @@ SEXP ocl_call(SEXP args) {
     SEXP context_exp = getAttrib(ker, oclContextSymbol);
     cl_command_queue commands = getCommandQueue(getAttrib(context_exp, oclQueueSymbol));
     cl_mem output;
+    cl_event output_wait;
+    SEXP output_wait_exp;
     size_t wdims[3] = {0, 0, 0};
     int wdim = 1;
     cl_int last_ocl_error;
@@ -256,6 +258,10 @@ SEXP ocl_call(SEXP args) {
 	Rf_error("invalid dimensions - must be a numeric vector with positive values");
     args = CDR(args);
 
+    cl_uint num_args, wait_events = 0;
+    clGetKernelInfo(kernel, CL_KERNEL_NUM_ARGS, sizeof(cl_uint), &num_args, NULL);
+    cl_event *input_wait = calloc(num_args - 2, sizeof(cl_event));
+
     SEXP resultbuf = PROTECT(cl_create_buffer(context_exp, olen, Rf_getAttrib(ker, oclModeSymbol)));
     output = (cl_mem)R_ExternalPtrAddr(resultbuf);
     if (clSetKernelArg(kernel, an++, sizeof(cl_mem), &output) != CL_SUCCESS)
@@ -266,10 +272,16 @@ SEXP ocl_call(SEXP args) {
         if (TYPEOF(arg) == EXTPTRSXP) {
             // buffer argument
             cl_mem argument = getBuffer(arg);
+            SEXP wait_exp = Rf_getAttrib(arg, oclEventSymbol);
 
             last_ocl_error = clSetKernelArg(kernel, an++, sizeof(cl_mem), &argument);
             if (last_ocl_error != CL_SUCCESS)
                 Rf_error("Failed to set vector kernel argument %d (length=%d, error %d)", an, Rf_asInteger(cl_get_buffer_length(arg)), last_ocl_error);
+
+            if (wait_events >= num_args - 2)
+                Rf_error("More arguments than expected");
+            if (TYPEOF(wait_exp) == EXTPTRSXP)
+                input_wait[wait_events++] = getEvent(wait_exp);
         } else {
             // single-value argument
             if (LENGTH(arg) != 1)
@@ -304,11 +316,15 @@ SEXP ocl_call(SEXP args) {
 	args = CDR(args);
     }
 
-    last_ocl_error = clEnqueueNDRangeKernel(commands, kernel, wdim, NULL, wdims, NULL, 0, NULL, NULL);
+    last_ocl_error = clEnqueueNDRangeKernel(commands, kernel, wdim, NULL, wdims, NULL,
+        wait_events, wait_events ? input_wait : NULL, &output_wait);
     if (last_ocl_error != CL_SUCCESS)
 	ocl_err("Kernel execution", last_ocl_error);
+    free(input_wait);
 
-    clFinish(commands);
+    // Attach event to output buffer
+    output_wait_exp = mkEvent(output_wait);
+    Rf_setAttrib(resultbuf, oclEventSymbol, output_wait_exp);
 
     UNPROTECT(1);
     return resultbuf;
