@@ -70,8 +70,11 @@ static inline float to_float(double value)
 {
     if (memcmp(&value, &R_NaReal, sizeof(double)))
         return (float)value;
-    else
-        return cl_NaFloat;
+    else {
+        float naFloat;
+        memcpy(&naFloat, &cl_NaFloat, sizeof(float));
+        return naFloat;
+    }
 }
 
 /* Create an OpenCL buffer */
