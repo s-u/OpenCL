@@ -1,0 +1,55 @@
+
+R version 3.3.1 (2016-06-21) -- "Bug in Your Hair"
+Copyright (C) 2016 The R Foundation for Statistical Computing
+Platform: x86_64-suse-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # 0. Create context and read kernel file
+> library(OpenCL)
+> ctx <- oclContext()
+> code <- readChar("kernel.cl", nchars=file.info("kernel.cl")$size)
+> 
+> # 1. Create kernel without inputs and run it
+> linear <- oclSimpleKernel(ctx, "linear", code, "integer")
+> oclRun(linear, 4)
+OpenCL buffer, 4 elements of type integer 
+[1] 0 1 2 3
+> oclRun(linear, 32)
+OpenCL buffer, 32 elements of type integer 
+ [1]  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
+[26] 25 26 27 28 29 30 31
+> 
+> # 2. Run kernel with a numeric input buffer
+> square <- oclSimpleKernel(ctx, "square", code)
+> input <- as.clBuffer(sqrt(1:16), ctx)
+> output <- oclRun(square, 16, input)
+> output
+OpenCL buffer, 16 elements of type double 
+ [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
+> oclRun(square, 16, output)
+OpenCL buffer, 16 elements of type double 
+ [1]   1   4   9  16  25  36  49  64  81 100 121 144 169 196 225 256
+> 
+> # 3. Run kernel with a buffer argument and a scalar argument
+> multiply <- oclSimpleKernel(ctx, "multiply", code)
+> input <- as.clBuffer((1:16)^2, ctx)
+> output <- oclRun(multiply, 16, input, 2.5)
+> output
+OpenCL buffer, 16 elements of type double 
+ [1]   2.5  10.0  22.5  40.0  62.5  90.0 122.5 160.0 202.5 250.0 302.5 360.0
+[13] 422.5 490.0 562.5 640.0
+> 
+> proc.time()
+   user  system elapsed 
+  1.188   0.056   1.234 
