@@ -42,6 +42,16 @@ length.clBuffer<- function(x) {
 }
 `[<-.clBuffer` <- function(x, indices, value) {
     if (missing(indices)) { indices = "all" }
-    value <- do.call(paste("as", attributes(x)$mode, sep="."), list(value))
+
+    # Determine expected class for value.
+    if (attributes(x)$mode %in% c("single", "double"))
+        targetClass = "numeric"
+    else if (attributes(x)$mode == "integer")
+        targetClass = "integer"
+
+    # Convert if necessary.
+    if (class(value) != targetClass)
+        value <- do.call(paste("as", attributes(x)$mode, sep="."), list(value))
+
     .Call("cl_write_buffer", x, indices, value)
 }
