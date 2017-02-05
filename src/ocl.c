@@ -231,7 +231,7 @@ SEXP ocl_call(SEXP args) {
     cl_event output_wait;
     SEXP output_wait_exp;
     size_t wdims[3] = {0, 0, 0};
-    int wdim = 1;
+    cl_uint wdim = 1;
     cl_int last_ocl_error;
 
     /* Get (optional) arguments */
