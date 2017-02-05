@@ -74,7 +74,7 @@ f <- function(x, mu=0, sigma=1, ...) {
 f(1:10/2) - dnorm(1:10/2)
 
 ## does the device support double-precision?
-if (any(grepl("cl_khr_fp64", oclInfo(attributes(ctx)$device)$exts))) {
+if (any("cl_khr_fp64" == oclInfo(attributes(ctx)$device)$exts)) {
 code = c("#pragma OPENCL EXTENSION cl_khr_fp64 : enable
 __kernel void dnorm(
   __global double* output,
