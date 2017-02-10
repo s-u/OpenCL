@@ -94,7 +94,7 @@ SEXP ocl_context(SEXP device_exp)
     Rf_setAttrib(ctx_exp, oclDeviceSymbol, device_exp);
 
     // Add command queue
-    queue = clCreateCommandQueue(ctx, device_id, 0, &last_ocl_error);
+    queue = clCreateCommandQueue(ctx, device_id, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &last_ocl_error);
     if (!queue)
         ocl_err("clCreateCommandQueue", last_ocl_error);
     queue_exp = PROTECT(mkCommandQueue(queue));
