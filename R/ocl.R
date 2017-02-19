@@ -110,6 +110,7 @@ oclInfo <- function(item) UseMethod("oclInfo")
 oclInfo.clDeviceID <- function(item) {
     info <- .Call("ocl_get_device_info", item)
     info$exts <- unlist(strsplit(info$exts, " "))
+    info$exts <- info$exts[info$exts != ""]     # Eliminate empty strings.
     info
 }
 oclInfo.clPlatformID <- function(item) .Call("ocl_get_platform_info", item)
