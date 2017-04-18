@@ -135,14 +135,20 @@ SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
     length = size / get_element_size(type);
 
     // Allocate appropriately sized target buffer
-    res = PROTECT(Rf_allocVector(get_sexptype(type), length));
-    if (type == CLT_FLOAT)
+    res = Rf_allocVector(get_sexptype(type), length);
+    if (type == CLT_FLOAT) {
         intermediate = (float*)calloc(length, sizeof(float));
+        if (intermediate == NULL)
+            Rf_error("Out of memory");
+    }
 
     last_ocl_error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, size,
         (type == CLT_FLOAT) ? (Rbyte*)intermediate : RAW(res), wait ? 1 : 0, wait ? &wait : NULL, NULL);
-    if (last_ocl_error != CL_SUCCESS)
+    if (last_ocl_error != CL_SUCCESS) {
+        if (type == CLT_FLOAT)
+            free(intermediate);
         ocl_err("clEnqueueReadBuffer", last_ocl_error);
+    }
 
     if (type == CLT_FLOAT) {
         /* Convert to double values */
@@ -153,7 +159,6 @@ SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
         free(intermediate);
     }
 
-    UNPROTECT(1);
     return res;
 }
 
@@ -186,6 +191,8 @@ SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP values)
     if (type == CLT_FLOAT) {
         /* Convert to double values */
         intermediate = (float*)calloc(length, sizeof(float));
+        if (intermediate == NULL)
+            Rf_error("Out of memory");
         size_t i;
         double *input = REAL(values);
         for (i = 0; i < length; i++)
@@ -195,8 +202,11 @@ SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP values)
     // Note that we do not have to block here.
     last_ocl_error = clEnqueueWriteBuffer(queue, buffer, CL_TRUE, 0, size,
         (type == CLT_FLOAT) ? (Rbyte*)intermediate : RAW(values), 0, NULL, NULL);
-    if (last_ocl_error != CL_SUCCESS)
+    if (last_ocl_error != CL_SUCCESS) {
+        if (type == CLT_FLOAT)
+            free(intermediate);
         ocl_err("clEnqueueWriteBuffer", last_ocl_error);
+    }
 
     if (type == CLT_FLOAT)
         free(intermediate);

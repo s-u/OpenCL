@@ -17,6 +17,8 @@ SEXP ocl_platforms() {
     if (np > 0) {
 	int i;
 	pid = (cl_platform_id *) malloc(sizeof(cl_platform_id) * np);
+        if (pid == NULL)
+            Rf_error("Out of memory");
 	if ((last_ocl_error = clGetPlatformIDs(np, pid, 0)) != CL_SUCCESS) {
 	    free(pid);
 	    ocl_err("clGetPlatformIDs", last_ocl_error);
@@ -65,6 +67,8 @@ SEXP ocl_devices(SEXP platform, SEXP sDevType) {
     if (np > 0) {
 	int i;
 	did = (cl_device_id *) malloc(sizeof(cl_device_id) * np);
+        if (did == NULL)
+            Rf_error("Out of memory");
 	if ((last_ocl_error = clGetDeviceIDs(pid, dt, np, did, 0)) != CL_SUCCESS) {
 	    free(did);
 	    ocl_err("clGetDeviceIDs", last_ocl_error);
@@ -187,6 +191,8 @@ SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP mode) {
 	int sn = LENGTH(code), i;
 	const char **cptr;
 	cptr = (const char **) malloc(sizeof(char*) * sn);
+        if (cptr == NULL)
+            Rf_error("Out of memory");
 	for (i = 0; i < sn; i++)
 	    cptr[i] = CHAR(STRING_ELT(code, i));
 	program = clCreateProgramWithSource(ctx, sn, cptr, NULL, &last_ocl_error);
@@ -261,6 +267,8 @@ SEXP ocl_call(SEXP args) {
     cl_uint num_args, wait_events = 0;
     clGetKernelInfo(kernel, CL_KERNEL_NUM_ARGS, sizeof(cl_uint), &num_args, NULL);
     cl_event *input_wait = calloc(num_args - 2, sizeof(cl_event));
+    if (input_wait == NULL)
+        Rf_error("Out of memory");
 
     SEXP resultbuf = PROTECT(cl_create_buffer(context_exp, olen, Rf_getAttrib(ker, oclModeSymbol)));
     output = (cl_mem)R_ExternalPtrAddr(resultbuf);
