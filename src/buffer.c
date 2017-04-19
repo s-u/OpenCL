@@ -92,10 +92,10 @@ SEXP cl_create_buffer(SEXP context_exp, SEXP length_exp, SEXP mode_exp)
     if (!buffer)
         ocl_err("clCreateBuffer", last_ocl_error);
 
-    buffer_exp = PROTECT(mkBuffer(buffer, type));
+    buffer_exp = Rf_protect(mkBuffer(buffer, type));
     Rf_setAttrib(buffer_exp, oclContextSymbol, context_exp);
     Rf_setAttrib(buffer_exp, oclModeSymbol, get_type_description(type));
-    UNPROTECT(1);
+    Rf_unprotect(1);
     return buffer_exp;
 }
 

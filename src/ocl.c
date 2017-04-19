@@ -23,11 +23,11 @@ SEXP ocl_platforms() {
 	    free(pid);
 	    ocl_err("clGetPlatformIDs", last_ocl_error);
 	}
-	PROTECT(res);
+	Rf_protect(res);
 	for (i = 0; i < np; i++)
 	    SET_VECTOR_ELT(res, i, mkPlatformID(pid[i]));
 	free(pid);
-	UNPROTECT(1);
+	Rf_unprotect(1);
     }
     return res;
 }
@@ -73,11 +73,11 @@ SEXP ocl_devices(SEXP platform, SEXP sDevType) {
 	    free(did);
 	    ocl_err("clGetDeviceIDs", last_ocl_error);
 	}
-	PROTECT(res);
+	Rf_protect(res);
 	for (i = 0; i < np; i++)
 	    SET_VECTOR_ELT(res, i, mkDeviceID(did[i]));
 	free(did);
-	UNPROTECT(1);
+	Rf_unprotect(1);
     }
     return res;
 }
@@ -94,17 +94,17 @@ SEXP ocl_context(SEXP device_exp)
     ctx = clCreateContext(NULL, 1, &device_id, NULL, NULL, &last_ocl_error);
     if (!ctx)
         ocl_err("clCreateContext", last_ocl_error);
-    ctx_exp = PROTECT(mkContext(ctx));
+    ctx_exp = Rf_protect(mkContext(ctx));
     Rf_setAttrib(ctx_exp, oclDeviceSymbol, device_exp);
 
     // Add command queue
     queue = clCreateCommandQueue(ctx, device_id, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &last_ocl_error);
     if (!queue)
         ocl_err("clCreateCommandQueue", last_ocl_error);
-    queue_exp = PROTECT(mkCommandQueue(queue));
+    queue_exp = Rf_protect(mkCommandQueue(queue));
     Rf_setAttrib(ctx_exp, oclQueueSymbol, queue_exp);
 
-    UNPROTECT(2);
+    Rf_unprotect(2);
     return ctx_exp;
 }
 
@@ -131,11 +131,11 @@ SEXP ocl_get_device_info(SEXP device) {
     const char *names[] = { "name", "vendor", "version", "profile", "exts", "driver.ver", "max.frequency" };
     size_t numAttr = sizeof(names) / sizeof(const char *);
 
-    SEXP nv = PROTECT(Rf_allocVector(STRSXP, numAttr));
+    SEXP nv = Rf_protect(Rf_allocVector(STRSXP, numAttr));
     int i;
     for (i = 0; i < LENGTH(nv); i++) SET_STRING_ELT(nv, i, mkChar(names[i]));
 
-    res = PROTECT(Rf_allocVector(VECSXP, numAttr));
+    res = Rf_protect(Rf_allocVector(VECSXP, numAttr));
     Rf_setAttrib(res, R_NamesSymbol, nv);
     SET_VECTOR_ELT(res, 0, getDeviceInfo(device_id, CL_DEVICE_NAME));
     SET_VECTOR_ELT(res, 1, getDeviceInfo(device_id, CL_DEVICE_VENDOR));
@@ -147,7 +147,7 @@ SEXP ocl_get_device_info(SEXP device) {
     clGetDeviceInfo(device_id, CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(max_freq), &max_freq, NULL);
     SET_VECTOR_ELT(res, 6, Rf_ScalarInteger(max_freq));
 
-    UNPROTECT(2);
+    Rf_unprotect(2);
     return res;
 }
 
@@ -156,17 +156,17 @@ SEXP ocl_get_platform_info(SEXP platform) {
     SEXP res;
     cl_platform_id platform_id = getPlatformID(platform);
     const char *names[] = { "name", "vendor", "version", "profile", "exts" };
-    SEXP nv = PROTECT(Rf_allocVector(STRSXP, 5));
+    SEXP nv = Rf_protect(Rf_allocVector(STRSXP, 5));
     int i;
     for (i = 0; i < LENGTH(nv); i++) SET_STRING_ELT(nv, i, mkChar(names[i]));
-    res = PROTECT(Rf_allocVector(VECSXP, LENGTH(nv)));
+    res = Rf_protect(Rf_allocVector(VECSXP, LENGTH(nv)));
     Rf_setAttrib(res, R_NamesSymbol, nv);
     SET_VECTOR_ELT(res, 0, getPlatformInfo(platform_id, CL_PLATFORM_NAME));
     SET_VECTOR_ELT(res, 1, getPlatformInfo(platform_id, CL_PLATFORM_VENDOR));
     SET_VECTOR_ELT(res, 2, getPlatformInfo(platform_id, CL_PLATFORM_VERSION));
     SET_VECTOR_ELT(res, 3, getPlatformInfo(platform_id, CL_PLATFORM_PROFILE));
     SET_VECTOR_ELT(res, 4, getPlatformInfo(platform_id, CL_PLATFORM_EXTENSIONS));
-    UNPROTECT(2);
+    Rf_unprotect(2);
     return res;
 }
 
@@ -215,11 +215,11 @@ SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP mode) {
 	ocl_err("clCreateKernel", last_ocl_error);
 
     {
-	SEXP sk = PROTECT(mkKernel(kernel));
+	SEXP sk = Rf_protect(mkKernel(kernel));
 	Rf_setAttrib(sk, oclContextSymbol, context);
 	Rf_setAttrib(sk, oclModeSymbol, mode);
 	Rf_setAttrib(sk, oclNameSymbol, k_name);
-	UNPROTECT(1);
+	Rf_unprotect(1);
 	return sk;
     }
 }
@@ -251,7 +251,7 @@ SEXP ocl_call(SEXP args) {
     if (on < 0)
 	Rf_error("invalid output length");
 
-    dimVec = coerceVector(CAR(args), INTSXP);  /* dim */
+    dimVec = Rf_coerceVector(CAR(args), INTSXP);  /* dim */
     wdim = LENGTH(dimVec);
     if (wdim > 3)
 	Rf_error("OpenCL standard only supports up to three work item dimensions - use index vectors for higher dimensions");
@@ -270,7 +270,7 @@ SEXP ocl_call(SEXP args) {
     if (input_wait == NULL)
         Rf_error("Out of memory");
 
-    SEXP resultbuf = PROTECT(cl_create_buffer(context_exp, olen, Rf_getAttrib(ker, oclModeSymbol)));
+    SEXP resultbuf = Rf_protect(cl_create_buffer(context_exp, olen, Rf_getAttrib(ker, oclModeSymbol)));
     output = (cl_mem)R_ExternalPtrAddr(resultbuf);
     if (clSetKernelArg(kernel, an++, sizeof(cl_mem), &output) != CL_SUCCESS)
 	Rf_error("failed to set first kernel argument as output in clSetKernelArg");
@@ -334,6 +334,6 @@ SEXP ocl_call(SEXP args) {
     output_wait_exp = mkEvent(output_wait);
     Rf_setAttrib(resultbuf, oclEventSymbol, output_wait_exp);
 
-    UNPROTECT(1);
+    Rf_unprotect(1);
     return resultbuf;
 }

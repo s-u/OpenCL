@@ -29,9 +29,9 @@ void ocl_err(const char *str, cl_int error_code) {
 /* Encapsulation of a cl_platform_id as SEXP */
 SEXP mkPlatformID(cl_platform_id id) {
     SEXP platform_exp;
-    platform_exp = PROTECT(R_MakeExternalPtr(id, R_NilValue, R_NilValue));
-    Rf_setAttrib(platform_exp, R_ClassSymbol, mkString("clPlatformID"));
-    UNPROTECT(1);
+    platform_exp = Rf_protect(R_MakeExternalPtr(id, R_NilValue, R_NilValue));
+    Rf_setAttrib(platform_exp, R_ClassSymbol, Rf_mkString("clPlatformID"));
+    Rf_unprotect(1);
     return platform_exp;
 }
 
@@ -44,9 +44,9 @@ cl_platform_id getPlatformID(SEXP platform) {
 /* Encapsulation of a cl_device_id as SEXP */
 SEXP mkDeviceID(cl_device_id id) {
     SEXP device_exp;
-    device_exp = PROTECT(R_MakeExternalPtr(id, R_NilValue, R_NilValue));
-    Rf_setAttrib(device_exp, R_ClassSymbol, mkString("clDeviceID"));
-    UNPROTECT(1);
+    device_exp = Rf_protect(R_MakeExternalPtr(id, R_NilValue, R_NilValue));
+    Rf_setAttrib(device_exp, R_ClassSymbol, Rf_mkString("clDeviceID"));
+    Rf_unprotect(1);
     return device_exp;
 }
 
@@ -64,10 +64,10 @@ static void clFreeContext(SEXP ctx) {
 
 SEXP mkContext(cl_context ctx) {
     SEXP ptr;
-    ptr = PROTECT(R_MakeExternalPtr(ctx, R_NilValue, R_NilValue));
+    ptr = Rf_protect(R_MakeExternalPtr(ctx, R_NilValue, R_NilValue));
     R_RegisterCFinalizerEx(ptr, clFreeContext, TRUE);
-    Rf_setAttrib(ptr, R_ClassSymbol, mkString("clContext"));
-    UNPROTECT(1);
+    Rf_setAttrib(ptr, R_ClassSymbol, Rf_mkString("clContext"));
+    Rf_unprotect(1);
     return ptr;
 }
 
@@ -85,10 +85,10 @@ static void clFreeCommandQueue(SEXP k) {
 
 SEXP mkCommandQueue(cl_command_queue queue) {
     SEXP ptr;
-    ptr = PROTECT(R_MakeExternalPtr(queue, R_NilValue, R_NilValue));
+    ptr = Rf_protect(R_MakeExternalPtr(queue, R_NilValue, R_NilValue));
     R_RegisterCFinalizerEx(ptr, clFreeCommandQueue, TRUE);
-    Rf_setAttrib(ptr, R_ClassSymbol, mkString("clCommandQueue"));
-    UNPROTECT(1);
+    Rf_setAttrib(ptr, R_ClassSymbol, Rf_mkString("clCommandQueue"));
+    Rf_unprotect(1);
     return ptr;
 }
 
@@ -107,10 +107,10 @@ static void clFreeBuffer(SEXP buffer_exp) {
 
 SEXP mkBuffer(cl_mem buffer, ClType type) {
     SEXP ptr;
-    ptr = PROTECT(R_MakeExternalPtr(buffer, Rf_ScalarInteger(type), R_NilValue));
+    ptr = Rf_protect(R_MakeExternalPtr(buffer, Rf_ScalarInteger(type), R_NilValue));
     R_RegisterCFinalizerEx(ptr, clFreeBuffer, TRUE);
-    Rf_setAttrib(ptr, R_ClassSymbol, mkString("clBuffer"));
-    UNPROTECT(1);
+    Rf_setAttrib(ptr, R_ClassSymbol, Rf_mkString("clBuffer"));
+    Rf_unprotect(1);
     return ptr;
 }
 
@@ -128,10 +128,10 @@ static void clFreeKernel(SEXP k) {
 
 SEXP mkKernel(cl_kernel k) {
     SEXP ptr;
-    ptr = PROTECT(R_MakeExternalPtr(k, R_NilValue, R_NilValue));
+    ptr = Rf_protect(R_MakeExternalPtr(k, R_NilValue, R_NilValue));
     R_RegisterCFinalizerEx(ptr, clFreeKernel, TRUE);
-    Rf_setAttrib(ptr, R_ClassSymbol, mkString("clKernel"));
-    UNPROTECT(1);
+    Rf_setAttrib(ptr, R_ClassSymbol, Rf_mkString("clKernel"));
+    Rf_unprotect(1);
     return ptr;
 }
 
@@ -149,10 +149,10 @@ static void clFreeEvent(SEXP event_exp) {
 
 SEXP mkEvent(cl_event event) {
     SEXP ptr;
-    ptr = PROTECT(R_MakeExternalPtr(event, R_NilValue, R_NilValue));
+    ptr = Rf_protect(R_MakeExternalPtr(event, R_NilValue, R_NilValue));
     R_RegisterCFinalizerEx(ptr, clFreeEvent, TRUE);
-    Rf_setAttrib(ptr, R_ClassSymbol, mkString("clEvent"));
-    UNPROTECT(1);
+    Rf_setAttrib(ptr, R_ClassSymbol, Rf_mkString("clEvent"));
+    Rf_unprotect(1);
     return ptr;
 }
 
