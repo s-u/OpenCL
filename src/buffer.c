@@ -123,7 +123,7 @@ attribute_visible SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
     cl_event wait = (TYPEOF(wait_exp) == EXTPTRSXP) ? getEvent(wait_exp) : NULL;
     size_t size, length;
     SEXP res;
-    float *intermediate;
+    float *intermediate = NULL;
     cl_int last_ocl_error;
 
     // TODO: Use indices!
