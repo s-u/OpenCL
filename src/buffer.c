@@ -3,6 +3,7 @@
 
 #define USE_RINTERNALS 1
 #include <Rinternals.h>
+#include <R_ext/Visibility.h>
 
 /* Translate description string to internal type */
 ClType get_type(SEXP mode_exp)
@@ -78,7 +79,7 @@ static inline float to_float(double value)
 }
 
 /* Create an OpenCL buffer */
-SEXP cl_create_buffer(SEXP context_exp, SEXP length_exp, SEXP mode_exp)
+attribute_visible SEXP cl_create_buffer(SEXP context_exp, SEXP length_exp, SEXP mode_exp)
 {
     cl_context context = getContext(context_exp);
     int len = Rf_asInteger(length_exp);
@@ -100,7 +101,7 @@ SEXP cl_create_buffer(SEXP context_exp, SEXP length_exp, SEXP mode_exp)
 }
 
 /* Retrieve the length of an OpenCL buffer */
-SEXP cl_get_buffer_length(SEXP buffer_exp)
+attribute_visible SEXP cl_get_buffer_length(SEXP buffer_exp)
 {
     cl_mem buffer = getBuffer(buffer_exp);
     ClType type = (ClType)Rf_asInteger(R_ExternalPtrTag(buffer_exp));
@@ -111,7 +112,7 @@ SEXP cl_get_buffer_length(SEXP buffer_exp)
 }
 
 /* Read data from an OpenCL buffer */
-SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
+attribute_visible SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
 {
     cl_mem buffer = getBuffer(buffer_exp);
     SEXP context_exp = Rf_getAttrib(buffer_exp, oclContextSymbol);
@@ -163,7 +164,7 @@ SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
 }
 
 /* Write data to an OpenCL buffer */
-SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP values)
+attribute_visible SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP values)
 {
     cl_mem buffer = getBuffer(buffer_exp);
     SEXP context_exp = Rf_getAttrib(buffer_exp, oclContextSymbol);

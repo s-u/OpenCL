@@ -3,9 +3,10 @@
 
 #define USE_RINTERNALS 1
 #include <Rinternals.h>
+#include <R_ext/Visibility.h>
 
 /* Implementation of oclPlatforms */
-SEXP ocl_platforms() {
+attribute_visible SEXP ocl_platforms() {
     SEXP res;
     cl_uint np;
     cl_platform_id *pid;
@@ -33,7 +34,7 @@ SEXP ocl_platforms() {
 }
 
 /* Implementation of oclDevices */
-SEXP ocl_devices(SEXP platform, SEXP sDevType) {
+attribute_visible SEXP ocl_devices(SEXP platform, SEXP sDevType) {
     cl_platform_id pid = getPlatformID(platform);
     SEXP res;
     cl_uint np;
@@ -83,7 +84,7 @@ SEXP ocl_devices(SEXP platform, SEXP sDevType) {
 }
 
 /* Implementation of oclContext */
-SEXP ocl_context(SEXP device_exp)
+attribute_visible SEXP ocl_context(SEXP device_exp)
 {
     cl_device_id device_id = getDeviceID(device_exp);
     cl_context ctx;
@@ -125,7 +126,7 @@ static SEXP getPlatformInfo(cl_platform_id platform_id, cl_device_info di) {
 }
 
 /* Implementation of print.clDeviceID and oclInfo.clDeviceID */
-SEXP ocl_get_device_info(SEXP device) {
+attribute_visible SEXP ocl_get_device_info(SEXP device) {
     SEXP res;
     cl_device_id device_id = getDeviceID(device);
     const char *names[] = { "name", "vendor", "version", "profile", "exts", "driver.ver", "max.frequency" };
@@ -152,7 +153,7 @@ SEXP ocl_get_device_info(SEXP device) {
 }
 
 /* Implementation of print.clPlatformID and oclInfo.clPlatformID */
-SEXP ocl_get_platform_info(SEXP platform) {
+attribute_visible SEXP ocl_get_platform_info(SEXP platform) {
     SEXP res;
     cl_platform_id platform_id = getPlatformID(platform);
     const char *names[] = { "name", "vendor", "version", "profile", "exts" };
@@ -173,7 +174,7 @@ SEXP ocl_get_platform_info(SEXP platform) {
 static char buffer[2048]; /* kernel build error buffer */
 
 /* Implementation of oclSimpleKernel */
-SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP mode) {
+attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP mode) {
     cl_context ctx = getContext(context);
     cl_device_id device = getDeviceID(getAttrib(context, oclDeviceSymbol));
     cl_program program;
@@ -226,7 +227,7 @@ SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP mode) {
 
 /* Implementation of oclRun */
 /* .External */
-SEXP ocl_call(SEXP args) {
+attribute_visible SEXP ocl_call(SEXP args) {
     int on, an = 0;
     ClType ftype = CLT_DOUBLE;
     SEXP ker = CADR(args), olen, arg, dimVec;

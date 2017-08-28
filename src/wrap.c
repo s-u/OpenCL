@@ -1,6 +1,7 @@
 #include "ocl.h"
 
 #include <Rinternals.h>
+#include <R_ext/Visibility.h>
 
 /* Define symbols */
 SEXP oclDeviceSymbol;
@@ -11,7 +12,7 @@ SEXP oclModeSymbol;
 SEXP oclEventSymbol;
 
 /* Install symbols */
-void R_init_OpenCL()
+attribute_visible void R_init_OpenCL()
 {
     oclDeviceSymbol = Rf_install("device");
     oclQueueSymbol = Rf_install("queue");
