@@ -11,7 +11,7 @@ SEXP oclModeSymbol;
 SEXP oclEventSymbol;
 
 /* Install symbols */
-__attribute__((constructor)) static void installSymbols()
+void R_init_OpenCL()
 {
     oclDeviceSymbol = Rf_install("device");
     oclQueueSymbol = Rf_install("queue");
@@ -21,7 +21,6 @@ __attribute__((constructor)) static void installSymbols()
     oclEventSymbol = Rf_install("event");
 }
 
-__attribute__((noreturn))
 void ocl_err(const char *str, cl_int error_code) {
     Rf_error("%s failed (oclError %d)", str, error_code);
 }
