@@ -55,7 +55,7 @@ static SEXPTYPE get_sexptype(ClType type)
 }
 
 /* FLOAT <-> DOUBLE CONVERSION with NAs */
-static uint32_t cl_NaFloat = 0x7ff007a2;   /* 0x7A2 = 1954, as in R_NaReal */
+static const uint32_t cl_NaFloat = 0x7ff007a2;   /* 0x7A2 = 1954, as in R_NaReal */
 
 /* Convert float to double value */
 static inline double to_double(float value)
