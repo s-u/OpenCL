@@ -1,5 +1,36 @@
 NEWS for the OpenCL package
 
+0.2     (under development)
+    o   OpenCL context and command queue can be persisted, allowing to keep data
+        between calls. The context also remembers whether to default to single-
+        or double-precision for numeric vectors.
+
+    o   Data can stay on the OpenCL device (GPU) between kernel calls. This is
+        extremely valuable when working with discrete GPUs connected over a
+        relatively slow PCIe connection.
+
+    o   A single-precision data type is no longer required. The conversion takes
+        place when transferring the data to the OpenCL device. On the R side,
+        data remains in numeric vectors.
+
+    o   Kernels are executed asynchronously and possibly out-of-order, if the
+        OpenCL implementation allows it. Synchronization need not to be done
+        manually and happens without the user knowing: OpenCL events
+        corresponding to a kernel execution are attached to the output buffer.
+        Following kernel executions having the buffer as input then wait for the
+        event, hence for the preceding kernel execution to finish. Likewise,
+        reads from buffers wait on the attached event as well.
+
+    o   OpenCL device information is amended by maximum frequency. Also the list
+        of extensions is broken down to make it easier searchable.
+
+    o   By default, we choose GPU devices. CPU devices usually don't make a lot
+        of sense. Also, if there are multiple GPU devices available - think of
+        a notebook with integrated and discrete GPU - we try to choose the
+        faster device.
+
+    o   There are now several tests covering most of the functionality.
+
 0.1-4	(under development)
     o	devices with very long extensions strings could cause error
 	on retrieval. Fixed with larger static buffer.
