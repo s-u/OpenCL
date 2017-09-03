@@ -171,8 +171,6 @@ attribute_visible SEXP ocl_get_platform_info(SEXP platform) {
     return res;
 }
 
-static char buffer[2048]; /* kernel build error buffer */
-
 /* Implementation of oclSimpleKernel */
 attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP mode) {
     cl_context ctx = getContext(context);
@@ -205,6 +203,7 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
     last_ocl_error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         size_t len;
+        char buffer[2048];
         clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
 	clReleaseProgram(program);
 	Rf_error("clBuildProgram failed (with %d): %s", last_ocl_error, buffer);
