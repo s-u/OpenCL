@@ -37,7 +37,7 @@ SEXP mkPlatformID(cl_platform_id id) {
 
 cl_platform_id getPlatformID(SEXP platform) {
     if (!Rf_inherits(platform, "clPlatformID") || TYPEOF(platform) != EXTPTRSXP)
-	Rf_error("invalid platform");
+	Rf_error("Expected OpenCL platform");
     return (cl_platform_id)R_ExternalPtrAddr(platform);
 }
 
@@ -53,7 +53,7 @@ SEXP mkDeviceID(cl_device_id id) {
 cl_device_id getDeviceID(SEXP device) {
     if (!Rf_inherits(device, "clDeviceID") ||
 	TYPEOF(device) != EXTPTRSXP)
-	Rf_error("invalid device");
+	Rf_error("Expected OpenCL device");
     return (cl_device_id)R_ExternalPtrAddr(device);
 }
 
@@ -74,7 +74,7 @@ SEXP mkContext(cl_context ctx) {
 cl_context getContext(SEXP ctx) {
     if (!Rf_inherits(ctx, "clContext") ||
 	TYPEOF(ctx) != EXTPTRSXP)
-	Rf_error("invalid OpenCL context");
+	Rf_error("Expected OpenCL context");
     return (cl_context)R_ExternalPtrAddr(ctx);
 }
 
@@ -95,7 +95,7 @@ SEXP mkCommandQueue(cl_command_queue queue) {
 cl_command_queue getCommandQueue(SEXP queue_exp) {
     if (!Rf_inherits(queue_exp, "clCommandQueue") ||
         TYPEOF(queue_exp) != EXTPTRSXP)
-        Rf_error("invalid OpenCL command queue");
+        Rf_error("Expected OpenCL command queue");
     return (cl_command_queue)R_ExternalPtrAddr(queue_exp);
 }
 
@@ -117,7 +117,7 @@ SEXP mkBuffer(cl_mem buffer, ClType type) {
 cl_mem getBuffer(SEXP buffer_exp) {
     if (!Rf_inherits(buffer_exp, "clBuffer") ||
         TYPEOF(buffer_exp) != EXTPTRSXP)
-        Rf_error("invalid OpenCL buffer");
+        Rf_error("Expected OpenCL buffer");
     return (cl_mem)R_ExternalPtrAddr(buffer_exp);
 }
 
@@ -138,7 +138,7 @@ SEXP mkKernel(cl_kernel k) {
 cl_kernel getKernel(SEXP k) {
     if (!Rf_inherits(k, "clKernel") ||
 	TYPEOF(k) != EXTPTRSXP)
-	Rf_error("invalid OpenCL kernel");
+	Rf_error("Expected OpenCL kernel");
     return (cl_kernel)R_ExternalPtrAddr(k);
 }
 
@@ -159,6 +159,6 @@ SEXP mkEvent(cl_event event) {
 cl_event getEvent(SEXP event_exp) {
     if (!Rf_inherits(event_exp, "clEvent") ||
         TYPEOF(event_exp) != EXTPTRSXP)
-        Rf_error("invalid OpenCL event");
+        Rf_error("Expected OpenCL event");
     return (cl_event)R_ExternalPtrAddr(event_exp);
 }

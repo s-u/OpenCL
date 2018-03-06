@@ -1,17 +1,20 @@
 # Print information about OpenCL objects
 print.clDeviceID <- function(x, ...) {
+  stopifnot(class(x) == "clDeviceID")
   i <- .Call("ocl_get_device_info", x)
   cat("OpenCL device '", i$name, "'\n", sep='')
   invisible(x)
 }
 
 print.clPlatformID <- function(x, ...) {
+  stopifnot(class(x) == "clPlatformID")
   i <- .Call("ocl_get_platform_info", x)
   cat("OpenCL platform '", i$name, "'\n", sep='')
   invisible(x)
 }
 
 print.clContext <- function(x, ...) {
+  stopifnot(class(x) == "clContext")
   cat("OpenCL context ")
   attr <- attributes(x)
   attributes(x) <- NULL
@@ -24,6 +27,7 @@ print.clContext <- function(x, ...) {
 }
 
 print.clCommandQueue <- function(x, ...) {
+  stopifnot(class(x) == "clCommandQueue")
   cat("OpenCL command queue ")
   attr <- attributes(x)
   attributes(x) <- NULL
@@ -38,6 +42,7 @@ names.clKernel <- function(x) names(attributes(x))
 `$.clKernel` <- function(x, name) attr(x, name)
 `$<-.clKernel` <- function(x, name, value) stop("Kernel properties are read-only")
 print.clKernel <- function(x, ...) {
+  stopifnot(class(x) == "clKernel")
   cat("OpenCL kernel '", attr(x, "name"),"'\n", sep='')
   a <- attributes(x)
   a$class <- NULL
@@ -48,10 +53,15 @@ print.clKernel <- function(x, ...) {
 
 # Query platforms and devices
 oclPlatforms <- function() .Call("ocl_platforms")
-oclDevices <- function(platform = oclPlatforms()[[1]], type="gpu") .Call("ocl_devices", platform, type)
+oclDevices <- function(platform = oclPlatforms()[[1]], type="gpu") {
+    stopifnot(class(platform) == "clPlatformID", class(type) == "character")
+    .Call("ocl_devices", platform, type)
+}
 
 # Create a context
 oclContext <- function(device = "gpu", precision = c("best", "single", "double")) {
+    stopifnot(class(precision) == "character")
+
     # Choose device, if user was too lazy
     if (class(device) != "clDeviceID") {
         candidates <- oclDevices(type=device)
@@ -84,6 +94,8 @@ oclContext <- function(device = "gpu", precision = c("best", "single", "double")
 
 # Compile a "simple kernel"
 oclSimpleKernel <- function(context, name, code, output.mode = c("numeric", "single", "double", "integer")) {
+    stopifnot(class(context) == "clContext", class(name) == "character", class(code) == "character")
+
     output.mode <- match.arg(output.mode)
     # Handle "numeric" type
     if (output.mode == "numeric")
@@ -103,7 +115,10 @@ oclSimpleKernel <- function(context, name, code, output.mode = c("numeric", "sin
 }
 
 # Run a simple kernel and retrieve the result
-oclRun <- function(kernel, size, ..., dim=size) .External("ocl_call", kernel, size, dim, ...)
+oclRun <- function(kernel, size, ..., dim=size) {
+    stopifnot(class(kernel) == "clKernel")
+    .External("ocl_call", kernel, size, dim, ...)
+}
 
 # Get extended information about OpenCL objects
 oclInfo <- function(item) UseMethod("oclInfo")

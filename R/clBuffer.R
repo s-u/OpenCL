@@ -1,6 +1,7 @@
 # Creating a buffer in a context
 clBuffer <- function(context, length, mode = c("numeric", "single", "double", "integer"))
 {
+    stopifnot(class(context) == "clContext")
     mode <- match.arg(mode)
     if (mode == "numeric")
         mode <- attributes(context)$precision
@@ -22,6 +23,7 @@ is.clBuffer <- function(any) inherits(any, "clBuffer")
 
 # Printing information about the buffer
 print.clBuffer <- function(x, ...) {
+    stopifnot(is.clBuffer(x))
     cat("OpenCL buffer,", length(x),
         "elements of type", attributes(x)$mode, "\n");
     print(.Call("cl_read_buffer", x, "all"), ...)
@@ -30,6 +32,7 @@ print.clBuffer <- function(x, ...) {
 
 # Get and modify length
 length.clBuffer<- function(x) {
+    stopifnot(is.clBuffer(x))
     .Call("cl_get_buffer_length", x)
 }
 # For now, we don't allow to modify the length.
