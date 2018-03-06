@@ -205,7 +205,9 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
 	    ocl_err("clCreateProgramWithSource", last_ocl_error);
     }
 
-    last_ocl_error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
+    const char* options = (get_type(mode) == CLT_FLOAT) ?
+        "-cl-single-precision-constant" : NULL;
+    last_ocl_error = clBuildProgram(program, 1, &device, options, NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         size_t len;
         char buffer[2048];
