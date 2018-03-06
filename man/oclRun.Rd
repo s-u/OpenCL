@@ -49,25 +49,23 @@ oclRun(kernel, size, ..., dim = size)
 }
 \examples{
 library(OpenCL)
-ctx = oclContext()
+ctx = oclContext(precision="single")
 
 code = c("
 __kernel void dnorm(
-  __global float* output,
+  __global numeric* output,
  const unsigned int count,
-  __global float* input,
- const float mu, const float sigma)
+  __global numeric* input,
+ const numeric mu, const numeric sigma)
 {
   int i = get_global_id(0);
   if(i < count)
-      output[i] = exp(-0.5f * ((input[i] - mu) / sigma) * ((input[i] - mu) / sigma))
+      output[i] = exp(-0.5 * ((input[i] - mu) / sigma) * ((input[i] - mu) / sigma))
       / (sigma * sqrt( 2 * 3.14159265358979323846264338327950288 ) );
 };")
-k.dnorm <- oclSimpleKernel(ctx, "dnorm", code, "single")
-f <- function(x, mu=0, sigma=1, ...) {
-  buf <- clBuffer(ctx, length(x), "single"); buf[] <- x
-  as.numeric(oclRun(k.dnorm, length(x), buf, mu, sigma, ...))
-}
+k.dnorm <- oclSimpleKernel(ctx, "dnorm", code)
+f <- function(x, mu=0, sigma=1)
+  as.numeric(oclRun(k.dnorm, length(x), as.clBuffer(x, ctx), mu, sigma))
 
 ## expect differences since the above uses single-precision but
 ## it should be close enough
@@ -75,24 +73,15 @@ f(1:10/2) - dnorm(1:10/2)
 
 ## does the device support double-precision?
 if (any("cl_khr_fp64" == oclInfo(attributes(ctx)$device)$exts)) {
-code = c("#pragma OPENCL EXTENSION cl_khr_fp64 : enable
-__kernel void dnorm(
-  __global double* output,
- const unsigned int count,
-  __global double* input,
- const double mu, const double sigma)
-{
-  int i = get_global_id(0);
-  if(i < count)
-      output[i] = exp(-0.5f * ((input[i] - mu) / sigma) * ((input[i] - mu) / sigma))
-      / (sigma * sqrt( 2 * 3.14159265358979323846264338327950288 ) );
-};")
-k.dnorm <- oclSimpleKernel(ctx, "dnorm", code, "double")
-f <- function(x, mu=0, sigma=1)
-  oclRun(k.dnorm, length(x), x, mu, sigma)
+  k.dnorm <- oclSimpleKernel(ctx, "dnorm", code, "double")
+  f <- function(x, mu=0, sigma=1) {
+    buf <- clBuffer(ctx, length(x), "double")
+    buf[] <- x
+    as.numeric(oclRun(k.dnorm, length(x), buf, mu, sigma))
+  }
 
-## probably not identical, but close...
-as.numeric(f(as.clBuffer(1:10/2, ctx))) - dnorm(1:10/2)
+  ## probably not identical, but close...
+  f(1:10/2) - dnorm(1:10/2)
 } else cat("\nSorry, your device doesn't support double-precision\n")
 
 ## Note that in practice you can use precision="best" in the first
