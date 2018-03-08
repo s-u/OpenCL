@@ -208,12 +208,24 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
     const char* options = (get_type(mode) == CLT_FLOAT) ?
         "-cl-single-precision-constant" : NULL;
     last_ocl_error = clBuildProgram(program, 1, &device, options, NULL, NULL);
-    if (last_ocl_error != CL_SUCCESS) {
+    if (last_ocl_error == CL_BUILD_PROGRAM_FAILURE) {
         size_t len;
-        char buffer[2048];
-        clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
-	clReleaseProgram(program);
-	Rf_error("clBuildProgram failed (with %d): %s", last_ocl_error, buffer);
+        if (clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &len) == CL_SUCCESS) {
+            char* buffer = malloc(len);
+            if (clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, len, buffer, NULL) == CL_SUCCESS)
+                R_ShowMessage(buffer);
+            else
+                R_ShowMessage("Could not obtain build log");
+            free(buffer);
+        }
+        else
+            R_ShowMessage("Could not obtain build log length");
+        clReleaseProgram(program);
+        Rf_error("clBuildProgram failed (with CL_BUILD_PROGRAM_FAILURE)");
+    }
+    else if (last_ocl_error != CL_SUCCESS) {
+        clReleaseProgram(program);
+        Rf_error("clBuildProgram failed (with %d)", last_ocl_error);
     }
 
     kernel = clCreateKernel(program, CHAR(STRING_ELT(k_name, 0)), &last_ocl_error);

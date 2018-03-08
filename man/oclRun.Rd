@@ -58,11 +58,11 @@ __kernel void dnorm(
   __global numeric* input,
  const numeric mu, const numeric sigma)
 {
-  int i = get_global_id(0);
+  size_t i = get_global_id(0);
   if(i < count)
       output[i] = exp(-0.5 * ((input[i] - mu) / sigma) * ((input[i] - mu) / sigma))
       / (sigma * sqrt( 2 * 3.14159265358979323846264338327950288 ) );
-};")
+}")
 k.dnorm <- oclSimpleKernel(ctx, "dnorm", code)
 f <- function(x, mu=0, sigma=1)
   as.numeric(oclRun(k.dnorm, length(x), as.clBuffer(x, ctx), mu, sigma))
