@@ -209,9 +209,11 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
         "-cl-single-precision-constant" : NULL;
     last_ocl_error = clBuildProgram(program, 1, &device, options, NULL, NULL);
     if (last_ocl_error == CL_BUILD_PROGRAM_FAILURE) {
-        size_t len;
-        if (clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &len) == CL_SUCCESS) {
-            char* buffer = malloc(len);
+        size_t len = 0;
+        char *buffer;
+        if (clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &len) == CL_SUCCESS
+            && (buffer = malloc(len)))
+        {
             if (clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, len, buffer, NULL) == CL_SUCCESS)
                 R_ShowMessage(buffer);
             else
@@ -219,7 +221,7 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
             free(buffer);
         }
         else
-            R_ShowMessage("Could not obtain build log length");
+            R_ShowMessage("Could not allocate build log buffer");
         clReleaseProgram(program);
         Rf_error("clBuildProgram failed (with CL_BUILD_PROGRAM_FAILURE)");
     }
