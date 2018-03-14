@@ -182,7 +182,10 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
     cl_device_id device = getDeviceID(getAttrib(context, oclDeviceSymbol));
     cl_program program;
     cl_kernel kernel;
+    const char* options = (get_type(mode) == CLT_FLOAT) ?
+        "-cl-single-precision-constant" : NULL;
     cl_int last_ocl_error;
+    size_t log_len = 0;
 
     if (TYPEOF(k_name) != STRSXP || LENGTH(k_name) != 1)
 	Rf_error("invalid kernel name");
@@ -205,16 +208,12 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
 	    ocl_err("clCreateProgramWithSource", last_ocl_error);
     }
 
-    const char* options = (get_type(mode) == CLT_FLOAT) ?
-        "-cl-single-precision-constant" : NULL;
     last_ocl_error = clBuildProgram(program, 1, &device, options, NULL, NULL);
-    if (last_ocl_error == CL_BUILD_PROGRAM_FAILURE) {
-        size_t len = 0;
-        char *buffer;
-        if (clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &len) == CL_SUCCESS
-            && (buffer = malloc(len)))
-        {
-            if (clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, len, buffer, NULL) == CL_SUCCESS)
+    if (clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_len) == CL_SUCCESS && log_len > 1)
+    {
+        char *buffer = malloc(log_len);
+        if (buffer) {
+            if (clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_len, buffer, NULL) == CL_SUCCESS)
                 R_ShowMessage(buffer);
             else
                 R_ShowMessage("Could not obtain build log");
@@ -222,10 +221,8 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
         }
         else
             R_ShowMessage("Could not allocate build log buffer");
-        clReleaseProgram(program);
-        Rf_error("clBuildProgram failed (with CL_BUILD_PROGRAM_FAILURE)");
     }
-    else if (last_ocl_error != CL_SUCCESS) {
+    if (last_ocl_error != CL_SUCCESS) {
         clReleaseProgram(program);
         Rf_error("clBuildProgram failed (with %d)", last_ocl_error);
     }
