@@ -10,7 +10,7 @@ Create an OpenCL context for a given device.
   context with \code{\link{oclSimpleKernel}}.
 }
 \usage{
-oclContext(device = "gpu", precision = c("best", "single", "double"))
+oclContext(device = "default", precision = c("best", "single", "double"))
 }
 \arguments{
   \item{device}{Device object as obtained from \code{\link{oclDevices}} or a

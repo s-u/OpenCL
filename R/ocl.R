@@ -53,13 +53,13 @@ print.clKernel <- function(x, ...) {
 
 # Query platforms and devices
 oclPlatforms <- function() .Call("ocl_platforms")
-oclDevices <- function(platform = oclPlatforms()[[1]], type="gpu") {
+oclDevices <- function(platform = oclPlatforms()[[1]], type="all") {
     stopifnot(class(platform) == "clPlatformID", class(type) == "character")
     .Call("ocl_devices", platform, type)
 }
 
 # Create a context
-oclContext <- function(device = "gpu", precision = c("best", "single", "double")) {
+oclContext <- function(device = "default", precision = c("best", "single", "double")) {
     stopifnot(class(precision) == "character")
 
     # Choose device, if user was too lazy
