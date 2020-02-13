@@ -37,7 +37,7 @@ attribute_visible SEXP ocl_platforms() {
 attribute_visible SEXP ocl_devices(SEXP platform, SEXP sDevType) {
     cl_platform_id pid = getPlatformID(platform);
     SEXP res;
-    cl_uint np;
+    cl_uint np = 0;
     cl_device_id *did;
     cl_device_type dt = CL_DEVICE_TYPE_DEFAULT;
     const char *dts;
