@@ -17,3 +17,7 @@ S3method(as.integer, clBuffer)
 S3method(length, clBuffer)
 S3method(`[`, clBuffer)
 S3method(`[<-`, clBuffer)
+
+S3method(oclInfo, clDeviceID)
+S3method(oclInfo, clPlatformID)
+S3method(oclInfo, list)
