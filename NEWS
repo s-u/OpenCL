@@ -1,6 +1,6 @@
 NEWS for the OpenCL package
 
-0.2     (under development)
+0.2-1	2020-03-03
     o   OpenCL context and command queue can be persisted, allowing to keep data
         between calls. The context also remembers whether to default to single-
         or double-precision for numeric vectors.
@@ -31,7 +31,20 @@ NEWS for the OpenCL package
 
     o   There are now several tests covering most of the functionality.
 
-0.1-4	(under development)
+    o	Windows configuration has been simplified. On Windows, you
+	have to set the OCL environemnt variable to the root of the
+	OpenCL SDK. By default the CPPFLAGS and LIBS will be
+	constrcuted from that location depending on whether 32-bit or
+	64-bit binaries are produced by appending lib/x64/OpenCL.lib
+	or lib/x86/OpenCL.lib respecitvely. Includes are assumed to be
+	in the includes directory. All of the above can be overridden
+	by setting OCLINC to the necessary pre-processor flags and
+	OCL32LIB or OCL64LIB for 32-bit and 64-bit linker flags.
+	(Note that OCL must still be set even if you override all
+	flags)
+
+
+0.1-4
     o	devices with very long extensions strings could cause error
 	on retrieval. Fixed with larger static buffer.
 	(Thanks to Valerio Aimale again)
