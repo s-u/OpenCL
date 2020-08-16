@@ -12,7 +12,7 @@ SEXP oclModeSymbol;
 SEXP oclEventSymbol;
 
 /* Install symbols */
-attribute_visible void R_init_OpenCL()
+attribute_visible void R_init_OpenCL(void)
 {
     oclDeviceSymbol = Rf_install("device");
     oclQueueSymbol = Rf_install("queue");

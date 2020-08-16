@@ -6,7 +6,7 @@
 #include <R_ext/Visibility.h>
 
 /* Implementation of oclPlatforms */
-attribute_visible SEXP ocl_platforms() {
+attribute_visible SEXP ocl_platforms(void) {
     SEXP res;
     cl_uint np;
     cl_platform_id *pid;
