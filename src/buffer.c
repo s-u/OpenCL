@@ -144,7 +144,7 @@ attribute_visible SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
     }
 
     last_ocl_error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, size,
-        (type == CLT_FLOAT) ? (Rbyte*)intermediate : RAW(res), wait ? 1 : 0, wait ? &wait : NULL, NULL);
+        (type == CLT_FLOAT) ? (Rbyte*)intermediate : DATAPTR(res), wait ? 1 : 0, wait ? &wait : NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         if (type == CLT_FLOAT)
             free(intermediate);
@@ -202,7 +202,7 @@ attribute_visible SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP value
 
     // Note that we do not have to block here.
     last_ocl_error = clEnqueueWriteBuffer(queue, buffer, CL_TRUE, 0, size,
-        (type == CLT_FLOAT) ? (Rbyte*)intermediate : RAW(values), 0, NULL, NULL);
+        (type == CLT_FLOAT) ? (Rbyte*)intermediate : DATAPTR(values), 0, NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         if (type == CLT_FLOAT)
             free(intermediate);
