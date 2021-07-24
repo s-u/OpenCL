@@ -5,7 +5,7 @@ clBuffer <- function(context, length, mode = c("numeric", "single", "double", "i
     mode <- match.arg(mode)
     if (mode == "numeric")
         mode <- attributes(context)$precision
-    .Call("cl_create_buffer", context, length, mode)
+    .Call(cl_create_buffer, context, length, mode)
 }
 
 as.clBuffer <- function(vector, context) {
@@ -14,10 +14,10 @@ as.clBuffer <- function(vector, context) {
     buffer
 }
 as.double.clBuffer <- function(x, ...) {
-    as.double(.Call("cl_read_buffer", x, "all"))
+    as.double(.Call(cl_read_buffer, x, "all"))
 }
 as.integer.clBuffer <- function(x, ...) {
-    as.integer(.Call("cl_read_buffer", x, "all"))
+    as.integer(.Call(cl_read_buffer, x, "all"))
 }
 is.clBuffer <- function(any) inherits(any, "clBuffer")
 
@@ -26,14 +26,14 @@ print.clBuffer <- function(x, ...) {
     stopifnot(is.clBuffer(x))
     cat("OpenCL buffer,", length(x),
         "elements of type", attributes(x)$mode, "\n");
-    print(.Call("cl_read_buffer", x, "all"), ...)
+    print(.Call(cl_read_buffer, x, "all"), ...)
     invisible(x)
 }
 
 # Get and modify length
 length.clBuffer<- function(x) {
     stopifnot(is.clBuffer(x))
-    .Call("cl_get_buffer_length", x)
+    .Call(cl_get_buffer_length, x)
 }
 # For now, we don't allow to modify the length.
 #"length<-.clFloatBuffer" <- function(x, value) {}
@@ -41,7 +41,7 @@ length.clBuffer<- function(x) {
 # Retrieve and overwrite data
 `[.clBuffer` <- function(x, indices) {
     if (missing(indices)) { indices = "all" }
-    .Call("cl_read_buffer", x, indices)
+    .Call(cl_read_buffer, x, indices)
 }
 `[<-.clBuffer` <- function(x, indices, value) {
     if (missing(indices)) { indices = "all" }
@@ -56,5 +56,5 @@ length.clBuffer<- function(x) {
     if (class(value) != targetClass)
         value <- do.call(paste("as", attributes(x)$mode, sep="."), list(value))
 
-    .Call("cl_write_buffer", x, indices, value)
+    .Call(cl_write_buffer, x, indices, value)
 }

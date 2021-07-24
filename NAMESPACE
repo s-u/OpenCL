@@ -1,5 +1,8 @@
-useDynLib(OpenCL)
-exportPattern("^ocl")
+useDynLib(OpenCL, cl_create_buffer, cl_get_buffer_length,
+  cl_read_buffer, cl_write_buffer, ocl_context, ocl_devices,
+  ocl_ez_kernel, ocl_get_device_info, ocl_get_platform_info,
+  ocl_platforms, ocl_call)
+exportPattern("^ocl[A-Z]+")
 exportPattern("clBuffer$")
 
 S3method(print, clDeviceID)

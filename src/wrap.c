@@ -11,8 +11,11 @@ SEXP oclNameSymbol;
 SEXP oclModeSymbol;
 SEXP oclEventSymbol;
 
+/* from reg.c */
+void R_register_OpenCL(DllInfo *dll);
+
 /* Install symbols */
-attribute_visible void R_init_OpenCL(void)
+attribute_visible void R_init_OpenCL(DllInfo *dll)
 {
     oclDeviceSymbol = Rf_install("device");
     oclQueueSymbol = Rf_install("queue");
@@ -20,6 +23,8 @@ attribute_visible void R_init_OpenCL(void)
     oclNameSymbol = Rf_install("name");
     oclModeSymbol = Rf_install("mode");
     oclEventSymbol = Rf_install("event");
+
+    R_register_OpenCL(dll);
 }
 
 void ocl_err(const char *str, cl_int error_code) {

@@ -1,14 +1,14 @@
 # Print information about OpenCL objects
 print.clDeviceID <- function(x, ...) {
   stopifnot(class(x) == "clDeviceID")
-  i <- .Call("ocl_get_device_info", x)
+  i <- .Call(ocl_get_device_info, x)
   cat("OpenCL device '", i$name, "'\n", sep='')
   invisible(x)
 }
 
 print.clPlatformID <- function(x, ...) {
   stopifnot(class(x) == "clPlatformID")
-  i <- .Call("ocl_get_platform_info", x)
+  i <- .Call(ocl_get_platform_info, x)
   cat("OpenCL platform '", i$name, "'\n", sep='')
   invisible(x)
 }
@@ -52,10 +52,10 @@ print.clKernel <- function(x, ...) {
 }
 
 # Query platforms and devices
-oclPlatforms <- function() .Call("ocl_platforms")
+oclPlatforms <- function() .Call(ocl_platforms)
 oclDevices <- function(platform = oclPlatforms()[[1]], type="all") {
     stopifnot(class(platform) == "clPlatformID", class(type) == "character")
-    .Call("ocl_devices", platform, type)
+    .Call(ocl_devices, platform, type)
 }
 
 # Create a context
@@ -78,7 +78,7 @@ oclContext <- function(device = "default", precision = c("best", "single", "doub
     }
 
     # Create context
-    context <- .Call("ocl_context", device)
+    context <- .Call(ocl_context, device)
 
     # Find precision
     precision <- match.arg(precision)
@@ -111,22 +111,22 @@ oclSimpleKernel <- function(context, name, code, output.mode = c("numeric", "sin
         code <- c(
             "typedef float numeric;\n",
             code)
-  .Call("ocl_ez_kernel", context, name, code, output.mode)
+  .Call(ocl_ez_kernel, context, name, code, output.mode)
 }
 
 # Run a simple kernel and retrieve the result
 oclRun <- function(kernel, size, ..., dim=size) {
     stopifnot(class(kernel) == "clKernel")
-    .External("ocl_call", kernel, size, dim, ...)
+    .External(ocl_call, kernel, size, dim, ...)
 }
 
 # Get extended information about OpenCL objects
 oclInfo <- function(item) UseMethod("oclInfo")
 oclInfo.clDeviceID <- function(item) {
-    info <- .Call("ocl_get_device_info", item)
+    info <- .Call(ocl_get_device_info, item)
     info$exts <- unlist(strsplit(info$exts, " "))
     info$exts <- info$exts[info$exts != ""]     # Eliminate empty strings.
     info
 }
-oclInfo.clPlatformID <- function(item) .Call("ocl_get_platform_info", item)
+oclInfo.clPlatformID <- function(item) .Call(ocl_get_platform_info, item)
 oclInfo.list <- function(item) lapply(item, oclInfo)
