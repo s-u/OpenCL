@@ -1,7 +1,7 @@
 
-R version 3.3.1 (2016-06-21) -- "Bug in Your Hair"
-Copyright (C) 2016 The R Foundation for Statistical Computing
-Platform: x86_64-suse-linux-gnu (64-bit)
+R Under development (unstable) (2021-07-22 r80654) -- "Unsuffered Consequences"
+Copyright (C) 2021 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
@@ -22,6 +22,8 @@ Type 'q()' to quit R.
 > 
 > # 1. Create kernel without inputs and run it
 > linear <- oclSimpleKernel(ctx, "linear", code, "integer")
+
+
 > oclRun(linear, 4)
 OpenCL buffer, 4 elements of type integer 
 [1] 0 1 2 3
@@ -32,6 +34,8 @@ OpenCL buffer, 32 elements of type integer
 > 
 > # 2. Run kernel with a numeric input buffer
 > square <- oclSimpleKernel(ctx, "square", code)
+
+
 > input <- as.clBuffer(sqrt(1:16), ctx)
 > output <- oclRun(square, 16, input)
 > output
@@ -43,6 +47,8 @@ OpenCL buffer, 16 elements of type double
 > 
 > # 3. Run kernel with a buffer argument and a scalar argument
 > multiply <- oclSimpleKernel(ctx, "multiply", code)
+
+
 > input <- as.clBuffer((1:16)^2, ctx)
 > output <- oclRun(multiply, 16, input, 2.5)
 > output
@@ -52,4 +58,4 @@ OpenCL buffer, 16 elements of type double
 > 
 > proc.time()
    user  system elapsed 
-  1.188   0.056   1.234 
+  0.159   0.112   0.261 
