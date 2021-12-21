@@ -130,3 +130,6 @@ oclInfo.clDeviceID <- function(item) {
 }
 oclInfo.clPlatformID <- function(item) .Call(ocl_get_platform_info, item)
 oclInfo.list <- function(item) lapply(item, oclInfo)
+
+oclMemLimits <- function(trigger=NULL, high=NULL)
+    .Call(ocl_mem_limits, trigger, high)

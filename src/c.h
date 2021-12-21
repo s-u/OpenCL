@@ -13,6 +13,7 @@ extern SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP mode);
 extern SEXP ocl_get_device_info(SEXP device);
 extern SEXP ocl_get_platform_info(SEXP platform);
 extern SEXP ocl_platforms(void);
+extern SEXP ocl_mem_limits(SEXP sTrigger, SEXP sHigh);
 
 /* .External */
 extern SEXP ocl_call(SEXP args);

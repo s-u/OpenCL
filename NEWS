@@ -1,5 +1,10 @@
 NEWS for the OpenCL package
 
+0.2-3	2021-12-21
+    o	added buffer memory tracking and automatic garbage collection triggers.
+	See oclMemLimits() help for details. (#8)
+
+
 0.2-2	2021-07-24
     o	added native symbol registration
 

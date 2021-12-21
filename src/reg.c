@@ -15,6 +15,7 @@ static const R_CallMethodDef CAPI[] = {
     {"ocl_get_device_info",  (DL_FUNC) &ocl_get_device_info, 1},
     {"ocl_get_platform_info",  (DL_FUNC) &ocl_get_platform_info, 1},
     {"ocl_platforms",  (DL_FUNC) &ocl_platforms, 0},
+    {"ocl_mem_limits", (DL_FUNC) &ocl_mem_limits, 2 },
     {NULL, NULL, 0}
 };
 

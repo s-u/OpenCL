@@ -104,15 +104,109 @@ cl_command_queue getCommandQueue(SEXP queue_exp) {
     return (cl_command_queue)R_ExternalPtrAddr(queue_exp);
 }
 
+/* keep track of allocations so we can trigger GC if needed */
+static size_t allocated_buffer_size = 0;
+/* size to trigger R-side garbage collection - 0 = disabled */
+static size_t gc_trigger_size = 0;
+/* high-mark to trigger gc unconditionally */
+static size_t gc_high_mark = 0;
+/* if last tigger GC didn't get out of trigger zone we set
+   this flags and won't attempt furhter GC until high mark is reached */
+static int trigger_zone = 0;
+
+size_t R2size(SEXP sWhat, int which) {
+    if (TYPEOF(sWhat) == INTSXP &&
+	XLENGTH(sWhat) >= which && INTEGER(sWhat)[which] >= 0)
+	return (size_t) INTEGER(sWhat)[which];
+
+    if (TYPEOF(sWhat) == REALSXP &&
+	XLENGTH(sWhat) >= which && (REAL(sWhat)[which] >= 0))
+	return (size_t) (REAL(sWhat)[which]);
+
+    if (TYPEOF(sWhat) == STRSXP &&
+	XLENGTH(sWhat) >= which) {
+	const char *c = CHAR(STRING_ELT(sWhat, which)), *s = c;
+	while (*s >= '0' && *s <= '9') s++;
+	long long l = atoll(c);
+	switch (*s) {
+	case 'g':
+	case 'G':
+	    l *= 1024;
+	case 'm':
+	case 'M':
+	    l *= 1024;
+	case 'k':
+	case 'K':
+	    l *= 1024;
+	    break;
+	default:
+	    Rf_error("Invalid unit suffix in size specification: %s", c);
+	}
+	if (l >= 0)
+	    return (size_t) l;
+    }
+    Rf_error("Size specification must be a valid, positive integer numeric");
+    /* unreachable */
+    return 0.0;
+}
+
+attribute_visible SEXP ocl_mem_limits(SEXP sTrigger, SEXP sHigh) {
+    SEXP res;
+    size_t tri = gc_trigger_size, hm = gc_high_mark;
+    int do_set = 0;
+    if (sTrigger != R_NilValue) {
+	do_set = 1;
+	tri = R2size(sTrigger, 0);
+    }
+    if (sHigh != R_NilValue) {
+	do_set = 1;
+	hm = R2size(sHigh, 0);
+    }
+    if ((tri && !hm) || (hm && !tri))
+	Rf_error("The limits must be either both set or both zero to disable");
+    if (hm < tri)
+	Rf_error("The high mark cannot be smaller than the trigger mark");
+    if (do_set) {
+	gc_trigger_size = tri;
+	gc_high_mark = hm;
+	/* clear trigger zone */
+	trigger_zone = 0;
+    }
+    res = Rf_protect(Rf_mkNamed(VECSXP, (const char*[]) { "trigger", "high", "used", "in.zone", "" }));
+    SET_VECTOR_ELT(res, 0, Rf_ScalarReal((double) gc_trigger_size));
+    SET_VECTOR_ELT(res, 1, Rf_ScalarReal((double) gc_high_mark));
+    SET_VECTOR_ELT(res, 2, Rf_ScalarReal((double) allocated_buffer_size));
+    SET_VECTOR_ELT(res, 3, Rf_ScalarLogical(trigger_zone));
+    Rf_unprotect(1);
+    return res;
+}
+
 /* Encapsulation of a cl_mem as SEXP */
 static void clFreeBuffer(SEXP buffer_exp) {
     cl_mem buffer = (cl_mem)R_ExternalPtrAddr(buffer_exp);
+    size_t size = 0;
+
+    clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+    allocated_buffer_size -= size;
     clReleaseMemObject(buffer);
 }
 
-SEXP mkBuffer(cl_mem buffer, ClType type) {
+SEXP mkBuffer(cl_mem buffer, ClType type, size_t size) {
     SEXP ptr;
+    if (gc_trigger_size) {
+	/* should we do a gc ? */
+	if ((gc_high_mark && allocated_buffer_size > gc_high_mark) ||
+	    (allocated_buffer_size > gc_trigger_size && !trigger_zone)) {
+	    R_gc();
+	    /* if we didn't free enough to get under gc_trigger_size
+	       then we are in the trigger zone which means no more GCs
+	       until it gets critical */
+	    if (allocated_buffer_size > gc_trigger_size)
+		trigger_zone = 1;
+	}
+    }
     ptr = Rf_protect(R_MakeExternalPtr(buffer, Rf_ScalarInteger(type), R_NilValue));
+    allocated_buffer_size += size;
     R_RegisterCFinalizerEx(ptr, clFreeBuffer, TRUE);
     Rf_setAttrib(ptr, R_ClassSymbol, Rf_mkString("clBuffer"));
     Rf_unprotect(1);
