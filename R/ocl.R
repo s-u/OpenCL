@@ -122,13 +122,12 @@ oclRun <- function(kernel, size, ..., dim=size) {
 
 # Get extended information about OpenCL objects
 oclInfo <- function(item) UseMethod("oclInfo")
-oclInfo.clDeviceID <- function(item) {
-    info <- .Call(ocl_get_device_info, item)
-    info$exts <- unlist(strsplit(info$exts, " "))
-    info$exts <- info$exts[info$exts != ""]     # Eliminate empty strings.
+splitExts <- function(info) {
+    info$exts <- strsplit(info$exts, " ", fixed=TRUE)[[1]]
     info
 }
-oclInfo.clPlatformID <- function(item) .Call(ocl_get_platform_info, item)
+oclInfo.clDeviceID <- function(item) splitExts(.Call(ocl_get_device_info, item))
+oclInfo.clPlatformID <- function(item) splitExts(.Call(ocl_get_platform_info, item))
 oclInfo.list <- function(item) lapply(item, oclInfo)
 
 oclMemLimits <- function(trigger=NULL, high=NULL)
