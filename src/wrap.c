@@ -191,7 +191,7 @@ static void clFreeBuffer(SEXP buffer_exp) {
     clReleaseMemObject(buffer);
 }
 
-SEXP mkBuffer(cl_mem buffer, ClType type, size_t size) {
+SEXP mkBuffer(cl_mem buffer, ClType type) {
     SEXP ptr;
     if (gc_trigger_size) {
 	/* should we do a gc ? */
@@ -206,6 +206,8 @@ SEXP mkBuffer(cl_mem buffer, ClType type, size_t size) {
 	}
     }
     ptr = Rf_protect(R_MakeExternalPtr(buffer, Rf_ScalarInteger(type), R_NilValue));
+    size_t size = 0;
+    clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
     allocated_buffer_size += size;
     R_RegisterCFinalizerEx(ptr, clFreeBuffer, TRUE);
     Rf_setAttrib(ptr, R_ClassSymbol, Rf_mkString("clBuffer"));

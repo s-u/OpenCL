@@ -84,18 +84,16 @@ attribute_visible SEXP cl_create_buffer(SEXP context_exp, SEXP length_exp, SEXP 
     cl_context context = getContext(context_exp);
     ClType type = get_type(mode_exp);
     size_t len = (size_t) (Rf_asReal(length_exp) + 0.001);
-    size_t el_size = get_element_size(type);
     cl_mem buffer;
     SEXP buffer_exp;
     cl_int last_ocl_error;
 
-    len *= el_size;
-    buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, len,
+    buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, get_element_size(type) * len,
                             NULL, &last_ocl_error);
     if (!buffer)
         ocl_err("clCreateBuffer", last_ocl_error);
 
-    buffer_exp = Rf_protect(mkBuffer(buffer, type, len));
+    buffer_exp = Rf_protect(mkBuffer(buffer, type));
     Rf_setAttrib(buffer_exp, oclContextSymbol, context_exp);
     Rf_setAttrib(buffer_exp, oclModeSymbol, get_type_description(type));
     Rf_unprotect(1);

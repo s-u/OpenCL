@@ -44,7 +44,7 @@ SEXP mkCommandQueue(cl_command_queue queue);
 cl_command_queue getCommandQueue(SEXP queue_exp);
 
 /* Encapsulation of a cl_mem as SEXP */
-SEXP mkBuffer(cl_mem buffer, ClType type, size_t size);
+SEXP mkBuffer(cl_mem buffer, ClType type);
 cl_mem getBuffer(SEXP buffer_exp);
 
 /* Encapsulation of a cl_kernel as SEXP */
