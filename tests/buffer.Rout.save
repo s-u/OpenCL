@@ -19,20 +19,28 @@ Type 'q()' to quit R.
 > library(OpenCL)
 > ctx<-oclContext()
 > 
-> # 1. Create numeric buffer and fill with values
-> buf <- clBuffer(ctx, 16, "numeric")
+> # 1. Create single-precision buffer and fill with values
+> buf <- clBuffer(ctx, 16, "single")
 > buf[] <- 1:16
 > 
 > #    Inspect the resulting buffer
 > class(buf)
 [1] "clBuffer"
 > print(attributes(buf)$mode)
-[1] "double"
+[1] "single"
 > print(buf)
-OpenCL buffer, 16 elements of type double 
+OpenCL buffer, 16 elements of type single 
  [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
 > length(buf)
 [1] 16
+> 
+> #    Check if memory accounting works.
+> oclMemLimits()$used
+[1] 64
+> rm(buf)
+> invisible(gc())
+> oclMemLimits()$used
+[1] 0
 > 
 > # 2. The same for an integer buffer
 > ints <- clBuffer(ctx, 32, "integer")
@@ -62,7 +70,7 @@ OpenCL buffer, 16 elements of type integer
  [1] -1  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14
 > 
 > # 4. Other functions
-> c(is.clBuffer(buf), is.clBuffer(1:16), is.clBuffer(ctx))
+> c(is.clBuffer(ints), is.clBuffer(1:16), is.clBuffer(ctx))
 [1]  TRUE FALSE FALSE
 > 
 > proc.time()
