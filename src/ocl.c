@@ -184,7 +184,7 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
     cl_kernel kernel;
     const char* options = (get_type(mode) == CLT_FLOAT) ?
         "-cl-single-precision-constant" : NULL;
-    cl_int last_ocl_error;
+    cl_int last_ocl_error, build_log_ocl_error;
     size_t log_len = 0;
 
     if (TYPEOF(k_name) != STRSXP || LENGTH(k_name) != 1)
@@ -209,14 +209,17 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
     }
 
     last_ocl_error = clBuildProgram(program, 1, &device, options, NULL, NULL);
-    if (clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_len) == CL_SUCCESS && log_len > 1)
-    {
+    build_log_ocl_error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_len);
+    if (build_log_ocl_error != CL_SUCCESS)
+        Rf_warning("clGetProgramBuildInfo failed (with %d)", build_log_ocl_error);
+    else if (log_len > 1) {
         char *buffer = malloc(log_len);
         if (buffer) {
-            if (clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_len, buffer, NULL) == CL_SUCCESS)
+            build_log_ocl_error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_len, buffer, NULL);
+            if (build_log_ocl_error == CL_SUCCESS)
                 R_ShowMessage(buffer);
             else
-                R_ShowMessage("Could not obtain build log");
+                Rf_warning("clGetProgramBuildInfo failed (with %d)", build_log_ocl_error);
             free(buffer);
         }
         else
