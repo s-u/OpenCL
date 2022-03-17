@@ -37,6 +37,11 @@ oclRun(kernel, size, ..., dim = size)
   \code{float}) scalars and OpenCL buffers are supported as kernel arguments.
   The caller is responsible for matching the argument types according to the
   kernel in a way similar to \code{\link{.C}} and \code{\link{.Call}}.
+
+  Note that the kernel must match the input types as well, so typically
+  \code{as.clBuffer()} should include the mode (e.g., \code{"numeric"})
+  to match the kernel and/or explicit \code{as.numeric()} coercion should
+  be used.
 }
 \value{
   The resulting buffer of length \code{size}.
@@ -65,7 +70,7 @@ __kernel void dnorm(
 }")
 k.dnorm <- oclSimpleKernel(ctx, "dnorm", code)
 f <- function(x, mu=0, sigma=1)
-  as.numeric(oclRun(k.dnorm, length(x), as.clBuffer(x, ctx), mu, sigma))
+  as.numeric(oclRun(k.dnorm, length(x), as.clBuffer(x, ctx, "numeric"), mu, sigma))
 
 ## expect differences since the above uses single-precision but
 ## it should be close enough
@@ -74,11 +79,8 @@ f(1:10/2) - dnorm(1:10/2)
 ## does the device support double-precision?
 if (any("cl_khr_fp64" == oclInfo(attributes(ctx)$device)$exts)) {
   k.dnorm <- oclSimpleKernel(ctx, "dnorm", code, "double")
-  f <- function(x, mu=0, sigma=1) {
-    buf <- clBuffer(ctx, length(x), "double")
-    buf[] <- x
-    as.numeric(oclRun(k.dnorm, length(x), buf, mu, sigma))
-  }
+  f <- function(x, mu=0, sigma=1)
+    as.numeric(oclRun(k.dnorm, length(x), as.clBuffer(x, ctx, "double"), mu, sigma))
 
   ## probably not identical, but close...
   f(1:10/2) - dnorm(1:10/2)
