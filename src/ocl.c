@@ -102,7 +102,6 @@ attribute_visible SEXP ocl_context(SEXP device_exp)
     queue = clCreateCommandQueue(ctx, device_id, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &last_ocl_error);
     /* Some implementations don't support the out-of-order flag, retry without. */
     if (!queue && last_ocl_error == CL_INVALID_VALUE) {
-        Rf_warning("OpenCL implementation does not support out-of-order execution, disabling it");
         queue = clCreateCommandQueue(ctx, device_id, 0, &last_ocl_error);
     }
     if (!queue)
