@@ -1,5 +1,21 @@
 NEWS for the OpenCL package
 
+0.2-4	2022-03-17
+    o	Added full support for subsetting and subassignment for clBuffers.
+	Note that only contiguous operations (e.g. x[5:8] = 0) can be performed
+	natively, any other index will result in the entire buffer being
+	emerged and the operation done in R (CPU).
+
+    o	Added mode= parameter to as.clBuffer() to ensure specific type
+	of the buffer. This is ofen required when passing buffers to
+	kernel since the kernel code must match teh buffer type.
+
+    o	Improved oclRun() example to explicitly use numeric buffer for
+	reasons explained above. Previously, passing integer input
+	would result in integer buffer which does not match the kernel
+	code. (#10)
+
+
 0.2-3	2021-12-21
     o	added buffer memory tracking and automatic garbage collection triggers.
 	See oclMemLimits() help for details. (#8)
