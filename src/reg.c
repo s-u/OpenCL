@@ -9,6 +9,7 @@ static const R_CallMethodDef CAPI[] = {
     {"cl_get_buffer_length",  (DL_FUNC) &cl_get_buffer_length, 1},
     {"cl_read_buffer",  (DL_FUNC) &cl_read_buffer, 2},
     {"cl_write_buffer",  (DL_FUNC) &cl_write_buffer, 3},
+    {"cl_supported_index", (DL_FUNC) &cl_supported_index, 1},
     {"ocl_context",  (DL_FUNC) &ocl_context, 1},
     {"ocl_devices",  (DL_FUNC) &ocl_devices, 2},
     {"ocl_ez_kernel",  (DL_FUNC) &ocl_ez_kernel, 4},

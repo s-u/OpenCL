@@ -8,16 +8,16 @@ clBuffer <- function(context, length, mode = c("numeric", "single", "double", "i
     .Call(cl_create_buffer, context, length, mode)
 }
 
-as.clBuffer <- function(vector, context) {
-    buffer <- clBuffer(context, length(vector), class(vector))
+as.clBuffer <- function(vector, context, mode = class(vector)) {
+    buffer <- clBuffer(context, length(vector), mode)
     buffer[] <- vector
     buffer
 }
 as.double.clBuffer <- function(x, ...) {
-    as.double(.Call(cl_read_buffer, x, "all"))
+    as.double(.Call(cl_read_buffer, x, NULL))
 }
 as.integer.clBuffer <- function(x, ...) {
-    as.integer(.Call(cl_read_buffer, x, "all"))
+    as.integer(.Call(cl_read_buffer, x, NULL))
 }
 is.clBuffer <- function(any) inherits(any, "clBuffer")
 
@@ -26,7 +26,7 @@ print.clBuffer <- function(x, ...) {
     stopifnot(is.clBuffer(x))
     cat("OpenCL buffer,", length(x),
         "elements of type", attributes(x)$mode, "\n");
-    print(.Call(cl_read_buffer, x, "all"), ...)
+    print(.Call(cl_read_buffer, x, NULL), ...)
     invisible(x)
 }
 
@@ -39,22 +39,42 @@ length.clBuffer<- function(x) {
 #"length<-.clFloatBuffer" <- function(x, value) {}
 
 # Retrieve and overwrite data
-`[.clBuffer` <- function(x, indices) {
-    if (missing(indices)) { indices = "all" }
-    .Call(cl_read_buffer, x, indices)
+`[.clBuffer` <- function(x, i) {
+    # convert i to either NULL (all) or integer index
+    ix <- if (missing(i)) NULL else seq_along(x)[i]
+    # check if we can retrieve this en-block
+    if (.Call(cl_supported_index, ix))
+        .Call(cl_read_buffer, x, ix)
+    else ## emerge all and use R for subsetting - bad, but all we can do
+        .Call(cl_read_buffer, x, NULL)[i]
 }
-`[<-.clBuffer` <- function(x, indices, value) {
-    if (missing(indices)) { indices = "all" }
+
+`[<-.clBuffer` <- function(x, i, value) {
+    # convert i to either NULL (all) or integer index
+    ix <- if (missing(i)) NULL else seq_along(x)[i]
+
+    # do we have to emerge and replace in R?
+    if (!.Call(cl_supported_index, ix)) {
+        if (length(x) > 1e4)
+            warning("Non-contiguous sub-assignment on clBuffer, this has to be done in CPU memory by copying the entire buffer, so is very inefficient")
+        y <- x[]
+        y[i] <- value
+        x[] <- y
+        return(x)
+    }
 
     # Determine expected class for value.
-    if (attributes(x)$mode %in% c("single", "double"))
-        targetClass = "numeric"
-    else if (attributes(x)$mode == "integer")
-        targetClass = "integer"
+    targetClass <- switch(attributes(x)$mode,
+                          single=, double="numeric",
+                          integer="integer",
+                          stop("Invalid buffer class ", attributes(x)$mode))
 
-    # Convert if necessary.
-    if (class(value) != targetClass)
-        value <- do.call(paste("as", attributes(x)$mode, sep="."), list(value))
+    # Convert if necessary - target is either numeric or integer
+    if (!inherits(value, targetClass))
+        value <- if (targetClass == "numeric") as.numeric(value) else as.integer(value)
 
-    .Call(cl_write_buffer, x, indices, value)
+    # recycling
+    if (length(value) < length(ix)) value <- rep(value, length.out=length(ix))
+
+    .Call(cl_write_buffer, x, ix, value)
 }

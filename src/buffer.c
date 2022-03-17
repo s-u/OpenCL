@@ -111,6 +111,34 @@ attribute_visible SEXP cl_get_buffer_length(SEXP buffer_exp)
     return Rf_ScalarInteger(size / get_element_size(type));
 }
 
+static int contig_index(SEXP indices) {
+    size_t ixn = 0, i0 = 0;
+    int *ix = 0;
+    if (TYPEOF(indices) == INTSXP) {
+	ix = INTEGER(indices);
+	ixn = XLENGTH(indices);
+    } else if (indices == R_NilValue) /* all index is always ok */
+	return 1;
+    else /* should be REALSXP */
+	return 0;
+
+    if (ix) {
+	size_t i = 0;
+	if (ix[0] == NA_INTEGER || !ix[0])
+	    return 0;
+	i0 = ix[0] - 1; /* the value of the index, i.e. first element to retrieve */
+	i++;
+	while (i < ixn && ix[i - 1] + 1 == ix[i]) i++;
+	if (i < ixn)
+	    return 0;
+    }
+    return 1;
+}
+
+attribute_visible SEXP cl_supported_index(SEXP indices) {
+    return Rf_ScalarLogical(contig_index(indices));
+}
+
 /* Read data from an OpenCL buffer */
 attribute_visible SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
 {
@@ -121,29 +149,47 @@ attribute_visible SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
     ClType type = (ClType)Rf_asInteger(R_ExternalPtrTag(buffer_exp));
     SEXP wait_exp = Rf_getAttrib(buffer_exp, oclEventSymbol);
     cl_event wait = (TYPEOF(wait_exp) == EXTPTRSXP) ? getEvent(wait_exp) : NULL;
-    size_t size, length;
+    size_t size, length, ixn = 0, i0 = 0, read_size = 0, els = get_element_size(type);
+    int *ix = 0;
     SEXP res;
     float *intermediate = NULL;
     cl_int last_ocl_error;
 
-    // TODO: Use indices!
-    if (TYPEOF(indices) != STRSXP || LENGTH(indices) != 1
-        || strcmp(CHAR(STRING_ELT(indices, 0)), "all"))
-        Rf_error("arbitrary assignments not implemented yet, use []<-");
+    if (TYPEOF(indices) == INTSXP) {
+	ix = INTEGER(indices);
+	ixn = XLENGTH(indices);
+    } else if (indices != R_NilValue) /* should be REALSXP */
+	Rf_error("Sorry, long vector indexing is not supported (yet).");
 
     // Get buffer size
     clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
-    length = size / get_element_size(type);
+    length = size / els;
+
+    if (ix) { /* only contiguous writes are supported at this point */
+	size_t i = 0;
+	if (ix[0] == NA_INTEGER || !ix[0])
+	    Rf_error("indices cannot contain NAs or 0");
+	i0 = ix[0] - 1; /* the value of the index, i.e. first element to retrieve */
+	i++;
+	while (i < ixn && ix[i - 1] + 1 == ix[i]) i++;
+	if (i < ixn)
+	    Rf_error("Sorry, subseting on the GPU is only supported for a contiguous region.");
+	if (i0 + ixn > length)
+	    Rf_error("Subsetting range (%lu .. %lu) out of bounds (length is %lu).",
+		     (unsigned long) (i0 + 1), (unsigned long) (i0 + ixn), (unsigned long) length );
+	read_size = ixn * els;
+	i0 *= els;
+    } else read_size = size;
 
     // Allocate appropriately sized target buffer
-    res = Rf_allocVector(get_sexptype(type), length);
+    res = Rf_allocVector(get_sexptype(type), read_size / els);
     if (type == CLT_FLOAT) {
         intermediate = (float*)calloc(length, sizeof(float));
         if (intermediate == NULL)
             Rf_error("Out of memory");
     }
 
-    last_ocl_error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, size,
+    last_ocl_error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, i0, read_size,
         (type == CLT_FLOAT) ? (Rbyte*)intermediate : DATAPTR(res), wait ? 1 : 0, wait ? &wait : NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         if (type == CLT_FLOAT)
@@ -173,35 +219,63 @@ attribute_visible SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP value
     ClType type = (ClType)Rf_asInteger(R_ExternalPtrTag(buffer_exp));
     size_t size, length;
     float *intermediate;
+    int *ix = 0;
+    size_t ixn = 0, N = 0, i0 = 0, write_size = 0, els = get_element_size(type);
     cl_int last_ocl_error;
-
-    // TODO: Use indices!
-    if (TYPEOF(indices) != STRSXP || LENGTH(indices) != 1 || strcmp(CHAR(STRING_ELT(indices, 0)), "all"))
-        Rf_error("arbitrary assignments not implemented yet, use []<-");
 
     // Get buffer size
     clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
-    length = size / get_element_size(type);
+    length = size / els;
 
-    // Check input data
+    if (TYPEOF(indices) == INTSXP) {
+	ix = INTEGER(indices);
+	ixn = XLENGTH(indices);
+    } else if (indices != R_NilValue) /* should be REALSXP */
+	Rf_error("Sorry, long vector indexing is not supported (yet).");
+
+    /* Check input data */
     if (TYPEOF(values) != get_sexptype(type))
         Rf_error("invalid input vector type: %d", TYPEOF(values));
-    if (LENGTH(values) != length)
-        Rf_error("invalid input length: %d, expected %d", LENGTH(values), length);
+    N = XLENGTH(values);
+    if (ix && ixn != N)
+	Rf_error("invalid replacement length, %lu elements but %lu values",
+		 (unsigned long) ixn, (unsigned long) N);
+    if (!ix && N != length)
+	Rf_error("invalid replacement, got %lu values, but expected %lu ",
+		 (unsigned long) N, (unsigned long) length);
+
+    if (!N) /* empty replacement */
+	return buffer_exp;
+
+    if (ix) { /* only contiguous writes are supported at this point */
+	size_t i = 0;
+	if (ix[0] == NA_INTEGER || !ix[0])
+	    Rf_error("indices cannot contain NAs or 0");
+	i0 = ix[0] - 1; /* the value of the index, i.e. first element to retrieve */
+	i++;
+	while (i < ixn && ix[i - 1] + 1 == ix[i]) i++;
+	if (i < ixn)
+	    Rf_error("Sorry, sub-assignment on the GPU is only supported for a contiguous region.");
+	if (i0 + ixn > length)
+	    Rf_error("Sub-assignment range (%lu .. %lu) out of bounds (length is %lu).",
+		     (unsigned long) (i0 + 1), (unsigned long) (i0 + ixn), (unsigned long) length );
+	write_size = ixn * els;
+	i0 *= els;
+    } else write_size = size;
 
     if (type == CLT_FLOAT) {
-        /* Convert to double values */
-        intermediate = (float*)calloc(length, sizeof(float));
+        /* Convert doubles to floats */
+        intermediate = (float*)calloc(N, sizeof(float));
         if (intermediate == NULL)
             Rf_error("Out of memory");
         size_t i;
         double *input = REAL(values);
-        for (i = 0; i < length; i++)
+        for (i = 0; i < N; i++)
             intermediate[i] = to_float(input[i]);
     }
 
-    // Note that we do not have to block here.
-    last_ocl_error = clEnqueueWriteBuffer(queue, buffer, CL_TRUE, 0, size,
+    /* Note that we do not have to block here (other than for mem mgmt reasons) */
+    last_ocl_error = clEnqueueWriteBuffer(queue, buffer, CL_TRUE, i0, write_size,
         (type == CLT_FLOAT) ? (Rbyte*)intermediate : DATAPTR(values), 0, NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         if (type == CLT_FLOAT)
