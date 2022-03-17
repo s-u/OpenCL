@@ -12,6 +12,20 @@ print(attributes(buf)$mode)
 print(buf)
 length(buf)
 
+#    subsetting
+buf[2:5]       # contiguous
+buf[c(1,6)]    # non-contiguous
+buf[-1]        # negative
+buf[buf[] > 6] # logical
+buf[c(NA, 4)]  # NA
+
+#    subassignment
+buf[2:3] = 0 # contiguous
+buf[1:5]
+sum(buf[1:4])
+buf[5:4] = c(1,2) # non-contiguous (reversed)
+buf[1:5]
+
 #    Check if memory accounting works.
 oclMemLimits()$used
 rm(buf)

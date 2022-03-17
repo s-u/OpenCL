@@ -1,7 +1,7 @@
 
-R Under development (unstable) (2021-07-22 r80654) -- "Unsuffered Consequences"
-Copyright (C) 2021 The R Foundation for Statistical Computing
-Platform: x86_64-pc-linux-gnu (64-bit)
+R Under development (unstable) (2022-03-15 r81904) -- "Unsuffered Consequences"
+Copyright (C) 2022 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin17.0 (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
@@ -33,6 +33,28 @@ OpenCL buffer, 16 elements of type single
  [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
 > length(buf)
 [1] 16
+> 
+> #    subsetting
+> buf[2:5]       # contiguous
+[1] 2 3 4 5
+> buf[c(1,6)]    # non-contiguous
+[1] 1 6
+> buf[-1]        # negative
+ [1]  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
+> buf[buf[] > 6] # logical
+ [1]  7  8  9 10 11 12 13 14 15 16
+> buf[c(NA, 4)]  # NA
+[1] NA  4
+> 
+> #    subassignment
+> buf[2:3] = 0 # contiguous
+> buf[1:5]
+[1] 1 0 0 4 5
+> sum(buf[1:4])
+[1] 5
+> buf[5:4] = c(1,2) # non-contiguous (reversed)
+> buf[1:5]
+[1] 1 0 0 2 1
 > 
 > #    Check if memory accounting works.
 > oclMemLimits()$used
@@ -75,4 +97,4 @@ OpenCL buffer, 16 elements of type integer
 > 
 > proc.time()
    user  system elapsed 
-  0.145   0.114   0.250 
+  0.149   0.044   0.224 
