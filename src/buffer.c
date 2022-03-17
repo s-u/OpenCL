@@ -136,7 +136,13 @@ static int contig_index(SEXP indices) {
 }
 
 attribute_visible SEXP cl_supported_index(SEXP indices) {
+#if DEBUG
+    int ci = contig_index(indices);
+    REprintf("INFO: cl_supported_index = %s\n", ci ? "yes" : "no");
+    return Rf_ScalarLogical(ci);
+#else
     return Rf_ScalarLogical(contig_index(indices));
+#endif
 }
 
 /* Read data from an OpenCL buffer */
@@ -183,8 +189,13 @@ attribute_visible SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
 
     // Allocate appropriately sized target buffer
     res = Rf_allocVector(get_sexptype(type), read_size / els);
+#ifdef DEBUG
+    REprintf("INFO: cl_read_buffer, %s, i0 = %lu, read_size = %lu, buffer size = %lu, buffer length = %lu, result_len = %lu\n",
+	     ix ? "index" : "<all>", (unsigned long) i0, (unsigned long) read_size, (unsigned long) size, (unsigned long) length,
+	     (unsigned long) XLENGTH(res));
+#endif
     if (type == CLT_FLOAT) {
-        intermediate = (float*)calloc(length, sizeof(float));
+        intermediate = (float*)calloc(XLENGTH(res), sizeof(float));
         if (intermediate == NULL)
             Rf_error("Out of memory");
     }
@@ -199,9 +210,9 @@ attribute_visible SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
 
     if (type == CLT_FLOAT) {
         /* Convert to double values */
-        size_t i;
+        size_t i, N = XLENGTH(res);
         double *result = REAL(res);
-        for (i = 0; i < length; i++)
+        for (i = 0; i < N; i++)
             result[i] = to_double(intermediate[i]);
         free(intermediate);
     }
@@ -262,6 +273,12 @@ attribute_visible SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP value
 	write_size = ixn * els;
 	i0 *= els;
     } else write_size = size;
+
+#ifdef DEBUG
+    REprintf("INFO: cl_write_buffer, %s, i0 = %lu, write_size = %lu, buffer size = %lu, buffer length = %lu, values = %lu\n",
+	     ix ? "index" : "<all>", (unsigned long) i0, (unsigned long) write_size, (unsigned long) size, (unsigned long) length,
+	     (unsigned long) N);
+#endif
 
     if (type == CLT_FLOAT) {
         /* Convert doubles to floats */
