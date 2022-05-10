@@ -7,6 +7,27 @@
 #include <CL/opencl.h>
 #endif
 
+/* Sometime the actual runtime is not the one present during compilation
+ * Hence it is useful for "more recent runtime functions" to be able to
+ * test if they are present before trying to use them ...
+ *
+ * Using some code from the clinfo.c which is under CC0 licence.
+ */
+
+/* We will want to check for symbols in the OpenCL library.
+ * On Windows, we must get the module handle for it, on Unix-like
+ * systems we can just use RTLD_DEFAULT
+ */
+// We will be using 'dlsym' function to test presence in the used symbol in the running library :
+#ifdef _MSC_VER
+# include <windows.h>
+# define dlsym GetProcAddress
+# define DL_MODULE GetModuleHandle("OpenCL")
+#else
+# include <dlfcn.h>
+# define DL_MODULE ((void*)0) /* This would be RTLD_DEFAULT */
+#endif
+
 typedef struct SEXPREC* SEXP;
 
 /* Symbols */
