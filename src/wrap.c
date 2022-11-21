@@ -205,13 +205,14 @@ SEXP mkBuffer(cl_mem buffer, ClType type) {
 		trigger_zone = 1;
 	}
     }
-    ptr = Rf_protect(R_MakeExternalPtr(buffer, Rf_ScalarInteger(type), R_NilValue));
+    SEXP itype = Rf_protect(Rf_ScalarInteger(type));
+    ptr = Rf_protect(R_MakeExternalPtr(buffer, itype, R_NilValue));
     size_t size = 0;
     clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
     allocated_buffer_size += size;
     R_RegisterCFinalizerEx(ptr, clFreeBuffer, TRUE);
     Rf_setAttrib(ptr, R_ClassSymbol, Rf_mkString("clBuffer"));
-    Rf_unprotect(1);
+    Rf_unprotect(2);
     return ptr;
 }
 
