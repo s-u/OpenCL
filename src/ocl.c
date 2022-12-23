@@ -216,13 +216,13 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
         if (buffer) {
             build_log_ocl_error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_len, buffer, NULL);
             if (build_log_ocl_error == CL_SUCCESS)
-                R_ShowMessage(buffer);
+                Rprintf("%s\n", buffer);
             else
                 Rf_warning("clGetProgramBuildInfo failed (with %d)", build_log_ocl_error);
             free(buffer);
         }
         else
-            R_ShowMessage("Could not allocate build log buffer");
+            Rprintf("Could not allocate build log buffer\n");
     }
     if (last_ocl_error != CL_SUCCESS) {
         clReleaseProgram(program);
