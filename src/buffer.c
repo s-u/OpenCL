@@ -112,7 +112,7 @@ attribute_visible SEXP cl_get_buffer_length(SEXP buffer_exp)
 }
 
 static int contig_index(SEXP indices) {
-    size_t ixn = 0, i0 = 0;
+    size_t ixn = 0;
     int *ix = 0;
     if (TYPEOF(indices) == INTSXP) {
 	ix = INTEGER(indices);
@@ -126,7 +126,6 @@ static int contig_index(SEXP indices) {
 	size_t i = 0;
 	if (ix[0] == NA_INTEGER || !ix[0])
 	    return 0;
-	i0 = ix[0] - 1; /* the value of the index, i.e. first element to retrieve */
 	i++;
 	while (i < ixn && ix[i - 1] + 1 == ix[i]) i++;
 	if (i < ixn)
