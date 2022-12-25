@@ -196,13 +196,10 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
     {
 	int sn = LENGTH(code), i;
 	const char **cptr;
-	cptr = (const char **) malloc(sizeof(char*) * sn);
-        if (cptr == NULL)
-            Rf_error("Out of memory");
+	cptr = (const char **) R_alloc(sn, sizeof(char*));
 	for (i = 0; i < sn; i++)
 	    cptr[i] = CHAR(STRING_ELT(code, i));
 	program = clCreateProgramWithSource(ctx, sn, cptr, NULL, &last_ocl_error);
-	free(cptr);
 	if (!program)
 	    ocl_err("clCreateProgramWithSource", last_ocl_error);
     }
@@ -210,23 +207,25 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
     last_ocl_error = clBuildProgram(program, 1, &device, options, NULL, NULL);
     build_log_ocl_error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_len);
     if (build_log_ocl_error != CL_SUCCESS)
-        Rf_warning("clGetProgramBuildInfo failed (with %d)", build_log_ocl_error);
+        ocl_warn("clGetProgramBuildInfo", build_log_ocl_error);
     else if (log_len > 1) {
-        char *buffer = malloc(log_len);
-        if (buffer) {
-            build_log_ocl_error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_len, buffer, NULL);
-            if (build_log_ocl_error == CL_SUCCESS)
-                R_ShowMessage(buffer);
-            else
-                Rf_warning("clGetProgramBuildInfo failed (with %d)", build_log_ocl_error);
-            free(buffer);
-        }
-        else
-            R_ShowMessage("Could not allocate build log buffer");
+        char *buffer = R_alloc(log_len, 1);
+	build_log_ocl_error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_len, buffer, NULL);
+	if (build_log_ocl_error == CL_SUCCESS) {
+	    /* ok, we have the log - now this may be an error or just a message */
+	    if (last_ocl_error != CL_SUCCESS) {
+		clReleaseProgram(program);
+		Rf_error("clBuildProgram failed (with %d), build log:\n%s", last_ocl_error, buffer);
+	    } else {
+		/* in most cases when a log exists it means there was a compilation warning */
+		Rf_warning("OpenCL kernel compilation:\n%s", buffer);
+	    }
+	} else
+	    ocl_warn("clGetProgramBuildInfo", build_log_ocl_error);
     }
     if (last_ocl_error != CL_SUCCESS) {
         clReleaseProgram(program);
-        Rf_error("clBuildProgram failed (with %d)", last_ocl_error);
+        ocl_err("clBuildProgram", last_ocl_error);
     }
 
     kernel = clCreateKernel(program, CHAR(STRING_ELT(k_name, 0)), &last_ocl_error);

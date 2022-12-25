@@ -16,6 +16,7 @@ extern SEXP oclContextSymbol;
 extern SEXP oclNameSymbol;
 extern SEXP oclModeSymbol;
 extern SEXP oclEventSymbol;
+extern SEXP oclMessageSymbol;
 
 /* Supported buffer data types */
 typedef enum {
@@ -24,8 +25,9 @@ typedef enum {
     CLT_DOUBLE
 } ClType;
 
-/* Print error */
+/* Rf_error/warning with extra code handling */
 void ocl_err(const char *str, cl_int error_code);
+void ocl_warn(const char *str, cl_int error_code);
 
 /* Encapsulation of a cl_platform_id as SEXP */
 SEXP mkPlatformID(cl_platform_id id);

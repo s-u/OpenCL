@@ -10,6 +10,7 @@ SEXP oclContextSymbol;
 SEXP oclNameSymbol;
 SEXP oclModeSymbol;
 SEXP oclEventSymbol;
+SEXP oclMessageSymbol;
 
 /* from reg.c */
 void R_register_OpenCL(DllInfo *dll);
@@ -23,12 +24,24 @@ attribute_visible void R_init_OpenCL(DllInfo *dll)
     oclNameSymbol = Rf_install("name");
     oclModeSymbol = Rf_install("mode");
     oclEventSymbol = Rf_install("event");
+    oclMessageSymbol = Rf_install("message");
 
     R_register_OpenCL(dll);
 }
 
 void ocl_err(const char *str, cl_int error_code) {
     Rf_error("%s failed (oclError %d)", str, error_code);
+}
+
+void ocl_warn(const char *str, cl_int error_code) {
+    Rf_warning("%s failed (oclError %d)", str, error_code);
+}
+
+/* this is not actually used, but just in case we ever decide to... */
+void ocl_message(const char *msg) {
+    SEXP msg_call = PROTECT(lang2(oclMessageSymbol, PROTECT(Rf_mkString(msg))));
+    Rf_eval(msg_call, R_GlobalEnv);
+    UNPROTECT(2);
 }
 
 /* Encapsulation of a cl_platform_id as SEXP */
