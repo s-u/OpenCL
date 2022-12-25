@@ -5,6 +5,8 @@ NEWS for the OpenCL package
 	programs. Output from the OpenCL compilation is now included
 	in the error/warning. (#13)
 
+    o	Use more verbose, textual representation of OpenCL errors.
+
 
 0.2-4	2022-03-17
     o	Added full support for subsetting and subassignment for clBuffers.
