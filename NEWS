@@ -1,5 +1,11 @@
 NEWS for the OpenCL package
 
+0.2-5
+    o	Use correct error()/warning() for build logs in compiled
+	programs. Output from the OpenCL compilation is now included
+	in the error/warning. (#13)
+
+
 0.2-4	2022-03-17
     o	Added full support for subsetting and subassignment for clBuffers.
 	Note that only contiguous operations (e.g. x[5:8] = 0) can be performed
