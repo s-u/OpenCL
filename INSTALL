@@ -6,6 +6,8 @@ there are several implementations based on this standard. Each
 implementation is usually specific to a brand of a computing device
 (such as GPU, CPU or accelerator).
 
+Special considerations pertaion to the Windows operation system, see
+last section of this document.
 
 *** OpenCL IMPLEMENTATIONS ***
 
@@ -26,9 +28,9 @@ apt-get install nvidia-opencl-dev
 Type: GPU, CPU
 Vendor: Apple
 This OpenCL implementation is part of Mac OS X 10.6 (Snow Leopard) and
-Max OS X 10.7 (Lion) operating systems. The OpenCL package has been
-successfully tested with nVidia GPU devices (only single-precision is
-supported on the devices available to us).
+above. The OpenCL package has been successfully tested with nVidia GPU
+devices (both single and double precision) and Apple M1 (single
+precision only).
 The OpenCL framework is part of the OS so no additional libraries need
 to be installed.
 
@@ -71,6 +73,25 @@ set the PKG_CFLAGS and/or PKG_LIBS environment variables accordingly
 (and possibly LD_LIBRARY_PATH on some unix systems), see R
 documentation on this.
 
+*** Windows ***
+
+Due to limitations of the Windows operating system there is a conflict
+between the OpenCL package DLL and any other DLL called
+OpenCL.DLL including those of OpenCL vendors. Therefore the
+vendor-supplied DLL must be loaded first, __before__ the package is
+loaded. For example:
+
+dyn.load("C:/Windows/System32/OpenCL.dll", FALSE, TRUE)
+library(OpenCL)
+
+(This assumes your OpenCL.dll by the vendor has been installed into
+the system loation.)
+
+Installation: When compiling OpenCL for Windows, you have to set the
+OCL environment variable to the root of the OpenCL SDK. You can also
+set individual variables OCLINC, OCL32LIB and OCL64LIB (whether you
+need 64-bit SDK or both 32-bit and 64-bit depends on your R version)
+if the locations are non-standard.
 
 ---
 
