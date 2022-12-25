@@ -1,2 +1,3 @@
 PKG_CFLAGS=$(C_VISIBILITY)
-PKG_LIBS=`if test -z "$${PKG_LIBS}"; then if uname|grep -i darwin >/dev/null; then echo '-framework OpenCL'; else echo '-lOpenCL'; fi; else echo "$${PKG_LIBS}"; fi`
+## honor PKG_LIBS if supplied, otherwise it's -framework OpenCL on macOS and -lOpenCL elsewhere
+PKG_LIBS:=$(if $(PKG_LIBS),$(PKG_LIBS),$(shell if uname|grep -i darwin >/dev/null; then echo '-framework OpenCL'; else echo '-lOpenCL'; fi))
