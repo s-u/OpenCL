@@ -6,8 +6,9 @@ there are several implementations based on this standard. Each
 implementation is usually specific to a brand of a computing device
 (such as GPU, CPU or accelerator).
 
-Special considerations pertaion to the Windows operation system, see
-last section of this document.
+For special considerations pertaining to the Windows operating system,
+see last section of this document.
+
 
 *** OpenCL IMPLEMENTATIONS ***
 
@@ -85,7 +86,7 @@ dyn.load("C:/Windows/System32/OpenCL.dll", FALSE, TRUE)
 library(OpenCL)
 
 (This assumes your OpenCL.dll by the vendor has been installed into
-the system loation.)
+the system location.)
 
 Installation: When compiling OpenCL for Windows, you have to set the
 OCL environment variable to the root of the OpenCL SDK. You can also
@@ -97,4 +98,4 @@ if the locations are non-standard.
 
 DISCLAIMER: Product or corporate names may be trademarks or registered
 trademarks, and are used only for identification and explanation
-wihtout intent to infringe.
+without intent to infringe.
