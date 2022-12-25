@@ -30,11 +30,11 @@ attribute_visible void R_init_OpenCL(DllInfo *dll)
 }
 
 void ocl_err(const char *str, cl_int error_code) {
-    Rf_error("%s failed (oclError %d)", str, error_code);
+    Rf_error("%s failed, oclError %d: %s", str, error_code, ocl_errstr(error_code));
 }
 
 void ocl_warn(const char *str, cl_int error_code) {
-    Rf_warning("%s failed (oclError %d)", str, error_code);
+    Rf_warning("%s failed, oclError %d: %s", str, error_code, ocl_errstr(error_code));
 }
 
 /* this is not actually used, but just in case we ever decide to... */

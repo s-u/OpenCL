@@ -215,7 +215,8 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
 	    /* ok, we have the log - now this may be an error or just a message */
 	    if (last_ocl_error != CL_SUCCESS) {
 		clReleaseProgram(program);
-		Rf_error("clBuildProgram failed (with %d), build log:\n%s", last_ocl_error, buffer);
+		Rf_error("clBuildProgram failed with oclError: %d, %s, build log:\n%s",
+			 last_ocl_error, ocl_errstr(last_ocl_error), buffer);
 	    } else {
 		/* in most cases when a log exists it means there was a compilation warning */
 		Rf_warning("OpenCL kernel compilation:\n%s", buffer);

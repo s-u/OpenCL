@@ -25,6 +25,9 @@ typedef enum {
     CLT_DOUBLE
 } ClType;
 
+/* from oclerr.c (others are from wrap.c) */
+const char* ocl_errstr(cl_int errorCode);
+
 /* Rf_error/warning with extra code handling */
 void ocl_err(const char *str, cl_int error_code);
 void ocl_warn(const char *str, cl_int error_code);
