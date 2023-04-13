@@ -65,8 +65,8 @@ __kernel void dnorm(
 {
   size_t i = get_global_id(0);
   if(i < count)
-      output[i] = exp(-0.5 * ((input[i] - mu) / sigma) * ((input[i] - mu) / sigma))
-      / (sigma * sqrt( 2 * 3.14159265358979323846264338327950288 ) );
+      output[i] = exp((numeric) (-0.5 * ((input[i] - mu) / sigma) * ((input[i] - mu) / sigma)))
+      / (sigma * sqrt((numeric) (2 * 3.14159265358979323846264338327950288 )) );
 }")
 k.dnorm <- oclSimpleKernel(ctx, "dnorm", code)
 f <- function(x, mu=0, sigma=1)
