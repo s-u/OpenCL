@@ -132,3 +132,12 @@ oclInfo.list <- function(item) lapply(item, oclInfo)
 
 oclMemLimits <- function(trigger=NULL, high=NULL)
     .Call(ocl_mem_limits, trigger, high)
+
+## Low-level function mostly for diagnostics (not exported) allows the retrieval
+## of arbitrary device info entries based on the integer ID (cl_device_info).
+## Always returns a raw vector so the caller is expected to know how
+## to interpret the bytes into the actual information.
+## NOTE: only entries up to 2k in size can be retrieved (there are no known
+## entries in the standard that would be larger).
+.oclDeviceInfoEntry <- function(device, entry.id)
+    .Call(ocl_get_device_info_entry, device, entry.id)

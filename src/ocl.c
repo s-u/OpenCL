@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "ocl.h"
 
 #define USE_RINTERNALS 1
@@ -119,6 +120,21 @@ static SEXP getDeviceInfo(cl_device_id device_id, cl_device_info di) {
     if (last_ocl_error != CL_SUCCESS)
 	ocl_err("clGetDeviceInfo", last_ocl_error);
     return Rf_mkString(infobuf);
+}
+
+attribute_visible SEXP ocl_get_device_info_entry(SEXP device, SEXP sDI) {
+    SEXP res;
+    char infobuf[2048];
+    size_t out_size = 0;
+    cl_device_id device_id = getDeviceID(device);
+    cl_int last_ocl_error = clGetDeviceInfo(device_id, (cl_device_info) (unsigned int) asInteger(sDI),
+					    sizeof(infobuf), &infobuf, &out_size);
+    if (last_ocl_error != CL_SUCCESS)
+	ocl_err("clGetDeviceInfo", last_ocl_error);
+    res = Rf_allocVector(RAWSXP, out_size);
+    if (out_size)
+	memcpy(RAW(res), infobuf, out_size);
+    return res;
 }
 
 static SEXP getPlatformInfo(cl_platform_id platform_id, cl_device_info di) {
