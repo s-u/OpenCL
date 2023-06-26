@@ -5,6 +5,7 @@ useDynLib(OpenCL, cl_create_buffer, cl_get_buffer_length,
   ocl_get_device_info_entry)
 exportPattern("^ocl[A-Z]+")
 exportPattern("clBuffer$")
+exportPattern("clLocal$")
 
 S3method(print, clDeviceID)
 S3method(print, clPlatformID)
@@ -21,6 +22,9 @@ S3method(as.integer, clBuffer)
 S3method(length, clBuffer)
 S3method(`[`, clBuffer)
 S3method(`[<-`, clBuffer)
+
+S3method(print, clLocal)
+S3method(length, clLocal)
 
 S3method(oclInfo, clDeviceID)
 S3method(oclInfo, clPlatformID)

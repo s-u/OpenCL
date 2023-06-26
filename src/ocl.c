@@ -326,7 +326,23 @@ attribute_visible SEXP ocl_call(SEXP args) {
                 Rf_error("More arguments than expected");
             if (TYPEOF(wait_exp) == EXTPTRSXP)
                 input_wait[wait_events++] = getEvent(wait_exp);
-        } else {
+        } else if (Rf_inherits(arg, "clLocal")) {
+	    size_t buf_n, buf_elt, buf_size;
+	    int et = Rf_asInteger(VECTOR_ELT(arg, 1));
+	    SEXP sLen = VECTOR_ELT(arg, 0);
+	    if (TYPEOF(sLen) == REALSXP) {
+		double n_r = REAL(sLen)[0];
+		buf_n = (size_t) n_r;
+	    } else
+		buf_n = (size_t) Rf_asInteger(sLen);
+	    if (et == -1)
+		et = (ftype == CLT_FLOAT) ? 4 : 8;
+	    buf_elt = (size_t) et;
+	    buf_size = buf_n * buf_elt;
+	    last_ocl_error = clSetKernelArg(kernel, an++, buf_size, 0);
+            if (last_ocl_error != CL_SUCCESS)
+                Rf_error("Failed to kernel argument %d to local buffer of size %lu (error %d)", an, (unsigned long) buf_size, last_ocl_error);
+	} else {
             // single-value argument
             if (LENGTH(arg) != 1)
                 Rf_error("Non-buffer arguments must be scalar values");
