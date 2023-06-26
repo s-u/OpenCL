@@ -78,21 +78,43 @@ documentation on this.
 
 Due to limitations of the Windows operating system there is a conflict
 between the OpenCL package DLL and any other DLL called
-OpenCL.DLL including those of OpenCL vendors. Therefore the
-vendor-supplied DLL must be loaded first, __before__ the package is
-loaded. For example:
+OpenCL.DLL including those of OpenCL vendors. Therefore if the
+vendor-supplied DLL is called "OpenCL.dll", it must be loaded first,
+__before__ the package is loaded. For example:
 
 dyn.load("C:/Windows/System32/OpenCL.dll", FALSE, TRUE)
 library(OpenCL)
 
 (This assumes your OpenCL.dll by the vendor has been installed into
 the system location.)
+For this reason, statically linked OpenCL is recommended if provided
+by the vendor (consult the vendor documentation).
 
-Installation: When compiling OpenCL for Windows, you have to set the
-OCL environment variable to the root of the OpenCL SDK. You can also
-set individual variables OCLINC, OCL32LIB and OCL64LIB (whether you
-need 64-bit SDK or both 32-bit and 64-bit depends on your R version)
-if the locations are non-standard.
+
+INSTALLATION: When compiling OpenCL for Windows, you have to set the
+OCL environment variable to the root of the OpenCL SDK. For example,
+if installing from R, you can use `Sys.setenv()`:
+
+Sys.setenv(OCL="C:/CUDA/v12.1")
+
+The defaults assume that the headers are in "$SDK/include" and
+libraries in "$SDK/lib/x64/OpenCL.lib" and "$SDK/lib/x86/OpenCL.lib"
+respectively (where $SDK is the SDK root). More recent versions of R
+will only require 64-bit libraries.
+
+You can also set individual variables OCLINC, OCL32LIB and OCL64LIB
+with the necessary compiler flags if the locations are
+non-standard. Note that the flags are passed inside single quotes to
+R, so if multiple separate flags have to be set, they need to be
+separated by ' ', e.g.:
+
+Sys.setenv(OCL64LIB="C:/OpenCL/lib' '-lOpenCL")
+
+Please refer to the vendor's documentation for the necessary flags and
+locations.
+
+For recent single-architecture R versions (typically 64-bit only) the
+environment variable OCLLIB can be used instead of OCL64LIB.
 
 ---
 

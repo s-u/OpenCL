@@ -8,14 +8,26 @@ if test -z "$OCL"; then
    echo 'Set OCL to the root of the SDK'
    echo ''
    echo 'You can also set individial variables OCLINC,'
-   echo 'OCL32LIB and OCL64LIB. If they are not set,'
-   echo 'the default layout will be assumed.'
+   echo 'OCL32LIB and OCL64LIB. Note that they are expected'
+   echo 'to be valid compiler flags. If they are not set,'
+   echo 'the default SDK layout ($SDK/include, $SDK/lib/x64)'
+   echo 'will be assumed.'
    echo ''
    exit 1
 fi
 
+DARCH=$R_ARCH
+if test -z "$DARCH"; then
+   # R without R_ARCH is assumed to be x86_64 native
+   DARCH=x64
+   # if OCLLIB is set we pass it to OCL64LIB downstream
+   if test -n "$OCLLIB"; then
+      OCL64LIB="$OCLLIB"
+   fi
+fi
+
 echo ''
-echo " === configurig OpenCL for $R_ARCH =="
+echo " === configurig OpenCL for $DARCH =="
 echo ''
 echo " OCL=$OCL"
 echo ''
@@ -48,7 +60,10 @@ echo PKG_CPPFLAGS=$OCLINC
 echo PKG_LIBS=$OCLLIB
 
 echo ''
-echo "NOTE: make sure the run-time DLLs are on PATH!"
+echo 'NOTE: make sure the run-time DLLs are on the PATH, or if they are'
+echo '      also called OpenCL.dll then they must be loaded *before*'
+echo '      the package, typically with:'
+echo '      dyn.load("C:/Windows/System32/OpenCL.dll", FALSE, TRUE)'
 echo ''
 
 echo "PKG_CPPFLAGS='$OCLINC'" > src/Makevars.win
