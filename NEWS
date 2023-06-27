@@ -8,8 +8,12 @@ NEWS for the OpenCL package
     o	added (non-exported) .oclDeviceInfoEntry() for diagnostics
 	which allows the retrieval of any device information entries.
 
+    o	added support for dynamic __local memory buffers as arguments
+	to kernel via the clLocal() function -- see documentation for
+	details. (#18)
 
-0.2-6
+
+0.2-6	2023-04-13
     o	Update oclRun() example to explicitly cast in order to avoid
 	ambiguity errors in built-ins on macOS.
 
