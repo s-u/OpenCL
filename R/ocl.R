@@ -135,9 +135,14 @@ oclMemLimits <- function(trigger=NULL, high=NULL)
 
 ## Low-level function mostly for diagnostics (not exported) allows the retrieval
 ## of arbitrary device info entries based on the integer ID (cl_device_info).
-## Always returns a raw vector so the caller is expected to know how
-## to interpret the bytes into the actual information.
+## The caller is expected to know how to interpret the bytes into the actual information.
+## The int parameter can be set to 2, 4 or 8 which will convert the raw bytes into
+## unsigned integers of the corresponding with (in native endianness). Otherwise
+## a raw vector with the bytes is returned.
 ## NOTE: only entries up to 2k in size can be retrieved (there are no known
 ## entries in the standard that would be larger).
-.oclDeviceInfoEntry <- function(device, entry.id)
-    .Call(ocl_get_device_info_entry, device, entry.id)
+## Some useful uses:
+## OpenCL:::.oclDeviceInfoEntry(d, 0x101FL, 8L)  ## global memory size
+## OpenCL:::.oclDeviceInfoEntry(d, 0x1002L, 4L)  ## number of compute units
+.oclDeviceInfoEntry <- function(device, entry.id, int=0L)
+    .Call(ocl_get_device_info_entry, device, entry.id, int)
