@@ -1,3 +1,14 @@
+# Following the example of the 'graph' BioC package:
+# The first target is the one that gets executed by default. By
+# depending on $(SHLIB), we ensure that the shared library is built. We
+# have to rename because it's hard for OpenCL.dll to depend on a
+# different OpenCL.dll on Windows.
+all: $(SHLIB)
+	mv $< R_OpenCL$(SHLIB_EXT)
+# (Note that we can't name our rule R_OpenCL$(SHLIB_EXT) because the
+# variable isn't yet set by the time Make has to evaluate the expression
+# and determine the target name.)
+
 PKG_CFLAGS=$(C_VISIBILITY)
 ## honor PKG_LIBS if supplied, otherwise it's -framework OpenCL on macOS and -lOpenCL elsewhere
 PKG_LIBS:=$(if $(PKG_LIBS),$(PKG_LIBS),$(shell if uname|grep -i darwin >/dev/null; then echo '-framework OpenCL'; else echo '-lOpenCL'; fi))
