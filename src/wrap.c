@@ -16,7 +16,7 @@ SEXP oclMessageSymbol;
 void R_register_OpenCL(DllInfo *dll);
 
 /* Install symbols */
-attribute_visible void R_init_OpenCL(DllInfo *dll)
+attribute_visible void R_init_R_OpenCL(DllInfo *dll)
 {
     oclDeviceSymbol = Rf_install("device");
     oclQueueSymbol = Rf_install("queue");

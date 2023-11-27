@@ -68,3 +68,6 @@ echo ''
 
 echo "PKG_CPPFLAGS='$OCLINC'" > src/Makevars.win
 echo "PKG_LIBS='$OCLLIB'" >> src/Makevars.win
+# see src/Makevars for explanation:
+echo 'all: $(SHLIB)' >> src/Makevars.win
+echo '	mv $< R_OpenCL$(SHLIB_EXT)' >> src/Makevars.win
