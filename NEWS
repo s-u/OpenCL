@@ -1,5 +1,10 @@
 NEWS for the OpenCL package
 
+0.2-8
+    o	Change the name of the package dynamic object to R_OpenCL
+	to avoid name conflict on Windows. (#6, #20, thanks to
+	Aaron Puchert)
+
 0.2-7
     o	Windows: accept OCLLIB instead of OCL64LIB for single-arch R.
 	Update INSTALL documentation to be more specific about the
