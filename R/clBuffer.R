@@ -1,7 +1,8 @@
 # Creating a buffer in a context
 clBuffer <- function(context, length, mode = c("numeric", "single", "double", "integer"))
 {
-    stopifnot(class(context) == "clContext")
+    if (!inherits(context, "clContext"))
+        stop("Invalid context")
     mode <- match.arg(mode)
     if (mode == "numeric")
         mode <- attributes(context)$precision
