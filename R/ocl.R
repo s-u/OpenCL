@@ -1,20 +1,17 @@
 # Print information about OpenCL objects
 print.clDeviceID <- function(x, ...) {
-  stopifnot(class(x) == "clDeviceID")
   i <- .Call(ocl_get_device_info, x)
   cat("OpenCL device '", i$name, "'\n", sep='')
   invisible(x)
 }
 
 print.clPlatformID <- function(x, ...) {
-  stopifnot(class(x) == "clPlatformID")
   i <- .Call(ocl_get_platform_info, x)
   cat("OpenCL platform '", i$name, "'\n", sep='')
   invisible(x)
 }
 
 print.clContext <- function(x, ...) {
-  stopifnot(class(x) == "clContext")
   cat("OpenCL context ")
   attr <- attributes(x)
   attributes(x) <- NULL
@@ -27,7 +24,6 @@ print.clContext <- function(x, ...) {
 }
 
 print.clCommandQueue <- function(x, ...) {
-  stopifnot(class(x) == "clCommandQueue")
   cat("OpenCL command queue ")
   attr <- attributes(x)
   attributes(x) <- NULL
@@ -42,7 +38,6 @@ names.clKernel <- function(x) names(attributes(x))
 `$.clKernel` <- function(x, name) attr(x, name)
 `$<-.clKernel` <- function(x, name, value) stop("Kernel properties are read-only")
 print.clKernel <- function(x, ...) {
-  stopifnot(class(x) == "clKernel")
   cat("OpenCL kernel '", attr(x, "name"),"'\n", sep='')
   a <- attributes(x)
   a$class <- NULL
@@ -53,17 +48,20 @@ print.clKernel <- function(x, ...) {
 
 # Query platforms and devices
 oclPlatforms <- function() .Call(ocl_platforms)
-oclDevices <- function(platform = oclPlatforms()[[1]], type="all") {
-    stopifnot(class(platform) == "clPlatformID", class(type) == "character")
+oclDevices <- function(platform = oclPlatforms()[[1]],
+                       type=c("all", "cpu", "gpu", "accelerator", "default")) {
+    type <- match.arg(type)
+    if (!inherits(platform, "clPlatformID"))
+        stop("`platform' must be an object returned by oclPlatforms()")
     .Call(ocl_devices, platform, type)
 }
 
 # Create a context
 oclContext <- function(device = "default", precision = c("best", "single", "double")) {
-    stopifnot(class(precision) == "character")
+    precision <- match.arg(precision)
 
     # Choose device, if user was too lazy
-    if (class(device) != "clDeviceID") {
+    if (!inherits(device, "clDeviceID")) {
         candidates <- oclDevices(type=device)
         if (length(candidates) < 1)
             stop("No devices found")
@@ -72,8 +70,8 @@ oclContext <- function(device = "default", precision = c("best", "single", "doub
         # (We might use a better mechanism in the future)
         # Anyway, alert the user that our choice was ambigous.
         if (length(candidates) > 1)
-            warning("Found more than one device, choosing the fastest")
-        freqs <- as.numeric(lapply(oclInfo(candidates), function(info) info$max.frequency))
+            warning("Found more than one device, choosing the fastest (by clock frequency)")
+        freqs <- as.numeric(sapply(oclInfo(candidates), function(info) info$max.frequency))
         device <- candidates[[which.max(freqs)]]
     }
 
@@ -81,7 +79,6 @@ oclContext <- function(device = "default", precision = c("best", "single", "doub
     context <- .Call(ocl_context, device)
 
     # Find precision
-    precision <- match.arg(precision)
     if (precision == "best") {
         precision <- ifelse(
             any(oclInfo(device)$exts == "cl_khr_fp64"),
@@ -94,9 +91,11 @@ oclContext <- function(device = "default", precision = c("best", "single", "doub
 
 # Compile a "simple kernel"
 oclSimpleKernel <- function(context, name, code, output.mode = c("numeric", "single", "double", "integer")) {
-    stopifnot(class(context) == "clContext", class(name) == "character", class(code) == "character")
-
+    if (!inherits(context,"clContext"))
+        stop("invalid context")
     output.mode <- match.arg(output.mode)
+    name <- as.character(name)
+    code <- as.character(code)
     # Handle "numeric" type
     if (output.mode == "numeric")
         output.mode <- attributes(context)$precision
@@ -116,7 +115,8 @@ oclSimpleKernel <- function(context, name, code, output.mode = c("numeric", "sin
 
 # Run a simple kernel and retrieve the result
 oclRun <- function(kernel, size, ..., dim=size) {
-    stopifnot(class(kernel) == "clKernel")
+    if (!inherits(kernel, "clKernel"))
+        stop("invalid kernel object (e.g., use oclSimpleKernel first)")
     .External(ocl_call, kernel, size, dim, ...)
 }
 

@@ -7,7 +7,8 @@ Get a list of OpenCL devices.
 \code{oclDevices} retrieves a list of OpenCL devices for the given platform.
 }
 \usage{
-oclDevices(platform = oclPlatforms()[[1]], type = "all")
+oclDevices(platform = oclPlatforms()[[1]],
+           type = c("all", "cpu", "gpu", "accelerator", "default"))
 }
 \arguments{
   \item{platform}{OpenCL platform (see \code{\link{oclPlatforms}})}
