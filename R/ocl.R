@@ -66,8 +66,8 @@ oclContext <- function(device = "default", precision = c("best", "single", "doub
 <<<<<<< HEAD
     precision <- match.arg(precision)
 
-    # Choose device, if user was too lazy
-    if (! inherits(class(device, "clDeviceID") ) {
+    ## Choose device, if user was too lazy
+    if (! inherits(device, "clDeviceID") ) {
         plat.can <- oclPlatforms()
         if ( ! is.null(getOption("ocl.default.platform")) ) {
             message(sprintf("Option 'ocl.default.platform' is set to '%s', we will only consider this platform to choose devices from.",
@@ -85,19 +85,19 @@ oclContext <- function(device = "default", precision = c("best", "single", "doub
         if (length(candidates) < 1)
             stop("No devices found")
 
-        # Choose the "fastest" candidate in case of multiple GPUs.
-        # (We might use a better mechanism in the future)
-        # Anyway, alert the user that our choice was ambigous.
+        ## Choose the "fastest" candidate in case of multiple GPUs.
+        ## (We might use a better mechanism in the future)
+        ## Anyway, alert the user that our choice was ambigous.
         if (length(candidates) > 1)
             warning("Found more than one device, choosing the fastest (freq * compute units)")
         speed <- as.numeric(lapply(oclInfo(candidates), function(info) info$max.frequency * info$compute.unit))
         device <- candidates[[which.max(speed)]]
     }
 
-    # Create context
+    ## Create context
     context <- .Call(ocl_context, device)
 
-    # Find precision
+    ## Find precision
     if (precision == "best") {
         precision <- ifelse(
             any(oclInfo(device)$exts == "cl_khr_fp64"),
