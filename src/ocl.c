@@ -9,12 +9,18 @@
 /* Implementation of oclPlatforms */
 attribute_visible SEXP ocl_platforms(void) {
     SEXP res;
-    cl_uint np;
+    cl_uint np = 0;
     cl_platform_id *pid;
     cl_int last_ocl_error;
 
-    if ((last_ocl_error = clGetPlatformIDs(0, 0, &np)) != CL_SUCCESS)
+    if ((last_ocl_error = clGetPlatformIDs(0, 0, &np)) != CL_SUCCESS) {
+#ifdef CL_PLATFORM_NOT_FOUND_KHR
+	if (last_ocl_error == CL_PLATFORM_NOT_FOUND_KHR)
+	    Rf_warning("No OpenCL platforms found - try adding Installable Client Drivers (ICD) for your hardware.");
+	else
+#endif
 	ocl_err("clGetPlatformIDs", last_ocl_error);
+    }
     res = Rf_allocVector(VECSXP, np);
     if (np > 0) {
 	int i;
