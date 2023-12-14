@@ -1,5 +1,11 @@
 # 0. Create context
 library(OpenCL)
+
+if (!length(oclPlatforms())) {
+    cat("== Cannot run tests as there is no platform")
+    q("no")
+}
+
 ctx<-oclContext()
 
 # 1. Create single-precision buffer and fill with values

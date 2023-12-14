@@ -1,5 +1,11 @@
 # 0. Create context and read kernel file
 library(OpenCL)
+
+if (!length(oclPlatforms())) {
+    cat("== Cannot run tests as there is no platform")
+    q("no")
+}
+
 ctx <- oclContext()
 code <- readChar("kernel.cl", nchars=file.info("kernel.cl")$size)
 
