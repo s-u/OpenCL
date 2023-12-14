@@ -12,7 +12,9 @@ oclPlatforms()
 %\details{
 %}
 \value{
-  List of available OpenCL platforms.
+  List of available OpenCL platforms. If using OpenCL with Installable
+  Client Driver (ICD) support, the result can be an empty list if no
+  vendor ICD can be found. A warning is also issued in that case.
 }
 %\references{
 %}

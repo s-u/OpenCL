@@ -80,6 +80,10 @@ Aaron Puchert and Simon Urbanek
 }
 \examples{
 library(OpenCL)
+
+## Only proceed if this machine has at least one OpenCL platform
+if (length(oclPlatforms())) {
+
 ctx<-oclContext()
 
 buf<-clBuffer(ctx, 16, "numeric")
@@ -100,5 +104,6 @@ buf
 
 ## clBuffer is the required argument and return type of oclRun.
 ## See oclRun() examples.
+}
 }
 \keyword{interface}

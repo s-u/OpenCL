@@ -54,6 +54,8 @@ oclRun(kernel, size, ..., dim = size)
 }
 \examples{
 library(OpenCL)
+## Only proceed if this machine has at least one OpenCL platform
+if (length(oclPlatforms())) {
 ctx = oclContext(precision="single")
 
 code = c("
@@ -89,5 +91,6 @@ if (any("cl_khr_fp64" == oclInfo(attributes(ctx)$device)$exts)) {
 ## Note that in practice you can use precision="best" in the first
 ## example which will pick "double" on devices that support it and
 ## "single" elsewhere
+}
 }
 \keyword{interface}

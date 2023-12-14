@@ -33,9 +33,21 @@ oclContext(device = "default", precision = c("best", "single", "double"))
 }
 \examples{
 library(OpenCL)
-platform <- oclPlatforms()[[1]]
-device <- oclDevices(platform)[[1]]
-ctx <- oclContext(device)
-print(ctx)
+cat("== Platforms:\n")
+(platforms <- oclPlatforms())
+if (length(platforms)) {
+    cat("== Devices:\n")
+    ## pick the first platform
+    print(devices <- oclDevices(platforms[[1]]))
+    if (length(devices)) {
+        cat("== Context:\n")
+        ## pick the first device
+        print(ctx <- oclContext(devices[[1]]))
+    }
+    cat("== Default context:\n")
+    ## Note that context can find device on its own
+    ## (may be different from above if you have multiple devices)
+    print(c2 <- oclContext())
+}
 }
 \keyword{interface}

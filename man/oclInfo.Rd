@@ -34,9 +34,13 @@ Simon Urbanek
 \examples{
 p <- oclPlatforms()
 if (length(p)) {
-  print(oclInfo(p[[1]]))
-  d <- oclDevices(p[[1]])
-  if (length(d)) print(oclInfo(d))
+    cat("== Platform information:\n")
+    print(oclInfo(p[[1]]))
+    d <- oclDevices(p[[1]])
+    if (length(d)) {
+        cat("== Device information:\n")
+        print(oclInfo(d))
+    }
 }
 }
 \keyword{interface}
