@@ -3,6 +3,9 @@ NEWS for the OpenCL package
 0.2-10
     o	Adjust header declaration for ocl_get_device_info_entry.
 
+    o	Windows: for single-arch R fall back to $OCL/lib/OpenCL.lib
+	if present.
+
 
 0.2-9	2023-11-29
     o	Clean up superfluous class comparisons.

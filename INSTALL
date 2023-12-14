@@ -76,21 +76,6 @@ documentation on this.
 
 *** Windows ***
 
-Due to limitations of the Windows operating system there is a conflict
-between the OpenCL package DLL and any other DLL called
-OpenCL.DLL including those of OpenCL vendors. Therefore if the
-vendor-supplied DLL is called "OpenCL.dll", it must be loaded first,
-__before__ the package is loaded. For example:
-
-dyn.load("C:/Windows/System32/OpenCL.dll", FALSE, TRUE)
-library(OpenCL)
-
-(This assumes your OpenCL.dll by the vendor has been installed into
-the system location.)
-For this reason, statically linked OpenCL is recommended if provided
-by the vendor (consult the vendor documentation).
-
-
 INSTALLATION: When compiling OpenCL for Windows, you have to set the
 OCL environment variable to the root of the OpenCL SDK. For example,
 if installing from R, you can use `Sys.setenv()`:
@@ -100,7 +85,14 @@ Sys.setenv(OCL="C:/CUDA/v12.1")
 The defaults assume that the headers are in "$SDK/include" and
 libraries in "$SDK/lib/x64/OpenCL.lib" and "$SDK/lib/x86/OpenCL.lib"
 respectively (where $SDK is the SDK root). More recent versions of R
-will only require 64-bit libraries.
+will only require 64-bit libraries. In those versions, the OpenCL will
+also look for "$SDK/lib/OpenCL.lib" and will use it instead if
+present.
+
+Note that Khronos Group (the OpenCL standard governing body) provides
+a common SDK: https://github.com/KhronosGroup/OpenCL-SDK/releases
+which can be installed to multiplex between different OpenCL
+implementations. Simply unpack and point OCL to the root of the SDK.
 
 You can also set individual variables OCLINC, OCL32LIB and OCL64LIB
 with the necessary compiler flags if the locations are
@@ -115,6 +107,24 @@ locations.
 
 For recent single-architecture R versions (typically 64-bit only) the
 environment variable OCLLIB can be used instead of OCL64LIB.
+
+
+[Additonal notes for OpenCL before version 1.0-9]
+
+Due to limitations of the Windows operating system there is a conflict
+between the OpenCL package DLL and any other DLL called
+OpenCL.DLL including those of OpenCL vendors. Therefore if the
+vendor-supplied DLL is called "OpenCL.dll", it must be loaded first,
+__before__ the package is loaded. For example:
+
+dyn.load("C:/Windows/System32/OpenCL.dll", FALSE, TRUE)
+library(OpenCL)
+
+(This assumes your OpenCL.dll by the vendor has been installed into
+the system location.)
+For this reason, statically linked OpenCL is recommended if provided
+by the vendor (consult the vendor documentation) or use the Khronos
+SDK.
 
 ---
 
