@@ -16,7 +16,7 @@ if test -z "$OCL"; then
    exit 1
 fi
 
-DARCH=$R_ARCH
+DARCH=$(echo $R_ARCH | tr -d /)
 if test -z "$DARCH"; then
    # R without R_ARCH is assumed to be x86_64 native
    DARCH=x64
@@ -33,8 +33,17 @@ echo " OCL=$OCL"
 echo ''
 
 if test -z "$OCL64LIB"; then
-   OCL64LIB="$OCL/lib/x64/OpenCL.lib"
-   echo OCL64LIB not set, assuming $OCL64LIB
+  # some SDKs are single-arch
+  if test -e "$OCL/lib/OpenCL.lib" -a ! -e "$OCL/lib/x64/OpenCL.lib"; then
+    echo SDK appears to include only one architecture, assuming it is 64-bit
+    OCL64LIB="$OCL/lib/OpenCL.lib"
+  else
+    OCL64LIB="$OCL/lib/x64/OpenCL.lib"
+  fi
+  echo OCL64LIB not set, assuming $OCL64LIB
+  if test "$DARCH" = x64 -a ! -e "$OCL64LIB"; then
+    echo "WARNING: $OCL64LIB not found! Check your OCL and OCL64LIB settings!" >&2
+  fi
 fi
 if test -z "$OCL32LIB"; then
    OCL32LIB="$OCL/lib/x86/OpenCL.lib"
@@ -59,11 +68,6 @@ echo OCL=$OCL
 echo PKG_CPPFLAGS=$OCLINC
 echo PKG_LIBS=$OCLLIB
 
-echo ''
-echo 'NOTE: make sure the run-time DLLs are on the PATH, or if they are'
-echo '      also called OpenCL.dll then they must be loaded *before*'
-echo '      the package, typically with:'
-echo '      dyn.load("C:/Windows/System32/OpenCL.dll", FALSE, TRUE)'
 echo ''
 
 echo "PKG_CPPFLAGS='$OCLINC'" > src/Makevars.win
