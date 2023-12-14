@@ -7,4 +7,4 @@ Depends: R (>= 2.0.0)
 Description: This package provides an interface to OpenCL, allowing R to leverage computing power of GPUs and other HPC accelerator devices.
 License: BSD_3_clause + file LICENSE
 SystemRequirements: OpenCL library, GNU make
-URL: http://www.rforge.net/OpenCL/
+URL: https://www.rforge.net/OpenCL/
