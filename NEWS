@@ -11,6 +11,11 @@ NEWS for the OpenCL package
     o	Windows: for single-arch R fall back to $OCL/lib/OpenCL.lib
 	if present.
 
+    o	oclPlatforms() will return an empty list with a warning when
+	encountering `CL_PLATFORM_NOT_FOUND_KHR` when using Khronos
+	ICD while no vendor driver is found. (Previously this would
+	lead to an error).
+
 
 0.2-9	2023-11-29
     o	Clean up superfluous class comparisons.
