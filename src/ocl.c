@@ -268,7 +268,8 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
     if (build_log_ocl_error != CL_SUCCESS)
         ocl_warn("clGetProgramBuildInfo", build_log_ocl_error);
     else if (log_len > 1) {
-        char *buffer = R_alloc(log_len, 1);
+	char *buffer = R_alloc(log_len + 1, 1);
+	buffer[log_len] = 0;
 	build_log_ocl_error = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, log_len, buffer, NULL);
 	if (build_log_ocl_error == CL_SUCCESS) {
 	    /* ok, we have the log - now this may be an error or just a message */
@@ -277,8 +278,18 @@ attribute_visible SEXP ocl_ez_kernel(SEXP context, SEXP k_name, SEXP code, SEXP 
 		Rf_error("clBuildProgram failed with oclError: %d, %s, build log:\n%s",
 			 last_ocl_error, ocl_errstr(last_ocl_error), buffer);
 	    } else {
+		/* check if the log consist solely of whitespaces in which case we don't report (#21) */
+		int empty = 1;
+		const char *bb = (const char*) buffer;
+		while (*bb) {
+		    if (*bb > ' ') {
+			empty = 0;
+			break;
+		    }
+		    bb++;
+		}
 		/* in most cases when a log exists it means there was a compilation warning */
-		Rf_warning("OpenCL kernel compilation:\n%s", buffer);
+		if (!empty) Rf_warning("OpenCL kernel compilation log:\n%s", buffer);
 	    }
 	} else
 	    ocl_warn("clGetProgramBuildInfo", build_log_ocl_error);
