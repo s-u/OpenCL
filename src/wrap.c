@@ -1,4 +1,5 @@
 #include "ocl.h"
+#include <stdlib.h>
 
 #include <Rinternals.h>
 #include <R_ext/Visibility.h>

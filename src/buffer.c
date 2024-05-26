@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 #include "ocl.h"
 
 #define USE_RINTERNALS 1
