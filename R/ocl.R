@@ -63,7 +63,6 @@ oclDevices <- function(platform = oclPlatforms(),
 
 # Create a context
 oclContext <- function(device = "default", precision = c("best", "single", "double")) {
-<<<<<<< HEAD
     precision <- match.arg(precision)
 
     ## Choose device, if user was too lazy
