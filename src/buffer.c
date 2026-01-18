@@ -5,6 +5,12 @@
 #include <Rinternals.h>
 #include <R_ext/Visibility.h>
 
+#include <Rversion.h>
+#if (R_VERSION < R_Version(3,5,0))
+#define INTEGER_RO(x) ((const int*)INTEGER(x))
+#define REAL_RO(x) ((const int*)REAL(x))
+#endif
+
 /* Translate description string to internal type */
 ClType get_type(SEXP mode_exp)
 {
@@ -200,7 +206,9 @@ attribute_visible SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
     }
 
     last_ocl_error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, i0, read_size,
-        (type == CLT_FLOAT) ? (Rbyte*)intermediate : DATAPTR(res), wait ? 1 : 0, wait ? &wait : NULL, NULL);
+					 (type == CLT_FLOAT) ? (void*)intermediate :
+					 ((type == CLT_INT) ? (void*)INTEGER(res) : (void*)REAL(res)),
+					 wait ? 1 : 0, wait ? &wait : NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         if (type == CLT_FLOAT)
             free(intermediate);
@@ -292,7 +300,9 @@ attribute_visible SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP value
 
     /* Note that we do not have to block here (other than for mem mgmt reasons) */
     last_ocl_error = clEnqueueWriteBuffer(queue, buffer, CL_TRUE, i0, write_size,
-        (type == CLT_FLOAT) ? (Rbyte*)intermediate : DATAPTR(values), 0, NULL, NULL);
+					  (type == CLT_FLOAT) ? (const void*)intermediate :
+					  ((type == CLT_INT) ? (const void*)INTEGER_RO(values) : (const void*)REAL_RO(values)),
+					  0, NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         if (type == CLT_FLOAT)
             free(intermediate);
