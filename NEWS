@@ -1,8 +1,10 @@
 NEWS for the OpenCL package
 
-0.2-11
+0.2-11	2025-01-19
     o	Do not issue kernel compiler warning if the build log
 	string consists solely of whitespaces. (#21)
+
+    o	Replace DATAPTR with INTEGER/REAL to be API compliant.
 
 
 0.2-10	2023-12-22
