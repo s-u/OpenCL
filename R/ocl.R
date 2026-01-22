@@ -48,37 +48,55 @@ print.clKernel <- function(x, ...) {
 
 # Query platforms and devices
 oclPlatforms <- function() .Call(ocl_platforms)
-oclDevices <- function(platform = oclPlatforms()[[1]],
+oclDevices <- function(platform = oclPlatforms(),
                        type=c("all", "cpu", "gpu", "accelerator", "default")) {
     type <- match.arg(type)
-    if (!inherits(platform, "clPlatformID"))
-        stop("`platform' must be an object returned by oclPlatforms()")
-    .Call(ocl_devices, platform, type)
+    if ( inherits(platform, "clPlatformID") ) {
+        return(.Call(ocl_devices, platform, type))
+    }
+    if ( is.list(platform) ) {
+        ret <- unlist(lapply(X=platform, FUN=function(x) {stopifnot(inherits(x, "clPlatformID")); return(.Call(ocl_devices, x, type))} ))
+        return(ret)
+    }
+    stop("Platform should be either a clPlatform object, or a list thereof")
 }
 
 # Create a context
 oclContext <- function(device = "default", precision = c("best", "single", "double")) {
     precision <- match.arg(precision)
 
-    # Choose device, if user was too lazy
-    if (!inherits(device, "clDeviceID")) {
-        candidates <- oclDevices(type=device)
+    ## Choose device, if user was too lazy
+    if (! inherits(device, "clDeviceID") ) {
+        plat.can <- oclPlatforms()
+        if ( ! is.null(getOption("ocl.default.platform")) ) {
+            message(sprintf("Option 'ocl.default.platform' is set to '%s', we will only consider this platform to choose devices from.",
+                            getOption("ocl.default.platform")))
+            plat.names <- as.character(lapply(oclInfo(plat.can), function(info) info$name))
+            plat.can <- plat.can[ which(plat.names == getOption("ocl.default.platform"))]
+        }
+        candidates <- oclDevices(platform=plat.can, type=device)
+        if ( ! is.null(getOption("ocl.default.device")) ) {
+            message(sprintf("Option 'ocl.default.device' is set to '%s', we will only consider this device to create a default context.",
+                            getOption("ocl.default.device")))
+            dev.names <- as.character(lapply(oclInfo(candidates), function(info) info$name))
+            candidates <- candidates[ which(dev.names == getOption("ocl.default.device"))]
+        }
         if (length(candidates) < 1)
             stop("No devices found")
 
-        # Choose the "fastest" candidate in case of multiple GPUs.
-        # (We might use a better mechanism in the future)
-        # Anyway, alert the user that our choice was ambigous.
+        ## Choose the "fastest" candidate in case of multiple GPUs.
+        ## (We might use a better mechanism in the future)
+        ## Anyway, alert the user that our choice was ambigous.
         if (length(candidates) > 1)
-            warning("Found more than one device, choosing the fastest (by clock frequency)")
-        freqs <- as.numeric(sapply(oclInfo(candidates), function(info) info$max.frequency))
-        device <- candidates[[which.max(freqs)]]
+            warning("Found more than one device, choosing the fastest (freq * compute units)")
+        speed <- as.numeric(lapply(oclInfo(candidates), function(info) info$max.frequency * info$compute.unit))
+        device <- candidates[[which.max(speed)]]
     }
 
-    # Create context
+    ## Create context
     context <- .Call(ocl_context, device)
 
-    # Find precision
+    ## Find precision
     if (precision == "best") {
         precision <- ifelse(
             any(oclInfo(device)$exts == "cl_khr_fp64"),

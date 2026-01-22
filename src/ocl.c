@@ -71,6 +71,10 @@ attribute_visible SEXP ocl_devices(SEXP platform, SEXP sDevType) {
         last_ocl_error != CL_DEVICE_NOT_FOUND)
 	ocl_err("clGetDeviceIDs", last_ocl_error);
 
+    // Seems certain platform do not put np to 0 when returning a "CL_DEVICE_NOT_FOUND"
+    if (last_ocl_error == CL_DEVICE_NOT_FOUND)
+      np = 0;
+
     res = Rf_allocVector(VECSXP, np);
     if (np > 0) {
 	int i;
@@ -109,6 +113,7 @@ attribute_visible SEXP ocl_context(SEXP device_exp)
     queue = clCreateCommandQueue(ctx, device_id, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &last_ocl_error);
     /* Some implementations don't support the out-of-order flag, retry without. */
     if (!queue && last_ocl_error == CL_INVALID_VALUE) {
+        Rf_warning("OpenCL implementation does not support out-of-order execution, disabling it");
         queue = clCreateCommandQueue(ctx, device_id, 0, &last_ocl_error);
     }
     if (!queue)
@@ -192,7 +197,11 @@ static SEXP getPlatformInfo(cl_platform_id platform_id, cl_device_info di) {
 attribute_visible SEXP ocl_get_device_info(SEXP device) {
     SEXP res;
     cl_device_id device_id = getDeviceID(device);
-    const char *names[] = { "name", "vendor", "version", "profile", "exts", "driver.ver", "max.frequency" };
+    const char *names[] = { "name", "vendor", "version", "profile", "exts", "driver.ver", "max.frequency",
+			    "compute.unit", "max.wg.size", "max.alloc.mem", "global.mem", "local.mem",
+			    "unified.mem", "mem.align", "cache.line.size", "timer.resolution", "image.support",
+                            "max.read.image", "max.write.image", "max.1d.width", "max.2d.width", "max.2d.height",
+			    "max.3d.width", "max.3d.height", "max.3d.depth","max.sampler" };
     size_t numAttr = sizeof(names) / sizeof(const char *);
 
     SEXP nv = Rf_protect(Rf_allocVector(STRSXP, numAttr));
@@ -201,26 +210,129 @@ attribute_visible SEXP ocl_get_device_info(SEXP device) {
 
     res = Rf_protect(Rf_allocVector(VECSXP, numAttr));
     Rf_setAttrib(res, R_NamesSymbol, nv);
-    SET_VECTOR_ELT(res, 0, getDeviceInfo(device_id, CL_DEVICE_NAME));
-    SET_VECTOR_ELT(res, 1, getDeviceInfo(device_id, CL_DEVICE_VENDOR));
-    SET_VECTOR_ELT(res, 2, getDeviceInfo(device_id, CL_DEVICE_VERSION));
-    SET_VECTOR_ELT(res, 3, getDeviceInfo(device_id, CL_DEVICE_PROFILE));
-    SET_VECTOR_ELT(res, 4, getDeviceInfo(device_id, CL_DEVICE_EXTENSIONS));
-    SET_VECTOR_ELT(res, 5, getDeviceInfo(device_id, CL_DRIVER_VERSION));
+    i=0;
+    SET_VECTOR_ELT(res, i++, getDeviceInfo(device_id, CL_DEVICE_NAME));
+    SET_VECTOR_ELT(res, i++, getDeviceInfo(device_id, CL_DEVICE_VENDOR));
+    SET_VECTOR_ELT(res, i++, getDeviceInfo(device_id, CL_DEVICE_VERSION));
+    SET_VECTOR_ELT(res, i++, getDeviceInfo(device_id, CL_DEVICE_PROFILE));
+    SET_VECTOR_ELT(res, i++, getDeviceInfo(device_id, CL_DEVICE_EXTENSIONS));
+    SET_VECTOR_ELT(res, i++, getDeviceInfo(device_id, CL_DRIVER_VERSION));
     cl_uint max_freq;
     clGetDeviceInfo(device_id, CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(max_freq), &max_freq, NULL);
-    SET_VECTOR_ELT(res, 6, Rf_ScalarInteger(max_freq));
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(max_freq));
+
+    // Gathering more informations, might be cl_uint, size_t, cl_ulong or cl_bool :
+    cl_uint a_uint;
+    cl_ulong a_ulong;
+    size_t a_size;
+    cl_bool a_bool;
+
+    // CL_DEVICE_MAX_COMPUTE_UNITS            -> cl_uint
+    clGetDeviceInfo(device_id, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(a_uint), &a_uint, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_uint));
+
+    // CL_DEVICE_MAX_WORK_GROUP_SIZE          -> size_t
+    clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(a_size), &a_size, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_size));
+
+    // CL_DEVICE_MAX_MEM_ALLOC_SIZE           -> cl_ulong (but might be >= 2G, so reported as double)
+    clGetDeviceInfo(device_id, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(a_ulong), &a_ulong, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarReal(a_ulong));
+
+    // CL_DEVICE_GLOBAL_MEM_SIZE              -> cl_ulong (but might be >= 2G, so reported as double)
+    clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(a_ulong), &a_ulong, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarReal(a_ulong));
+
+    // CL_DEVICE_LOCAL_MEM_SIZE               -> cl_ulong (but might be >= 2G, so reported as double)
+    clGetDeviceInfo(device_id, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(a_ulong), &a_ulong, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarReal(a_ulong));
+
+    // CL_DEVICE_HOST_UNIFIED_MEMORY          -> cl_bool
+    clGetDeviceInfo(device_id, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(a_bool), &a_bool, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarLogical(a_bool));
+
+    // CL_DEVICE_MEM_BASE_ADDR_ALIGN          -> cl_ulong
+    clGetDeviceInfo(device_id, CL_DEVICE_MEM_BASE_ADDR_ALIGN, sizeof(a_ulong), &a_ulong, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_ulong));
+
+    // CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE    -> cl_ulong
+    clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE, sizeof(a_ulong), &a_ulong, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_ulong));
+
+    // CL_DEVICE_PROFILING_TIMER_RESOLUTION   -> size_t
+    clGetDeviceInfo(device_id, CL_DEVICE_PROFILING_TIMER_RESOLUTION, sizeof(a_size), &a_size, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_size));
+
+    // CL_DEVICE_IMAGE_SUPPORT                -> cl_bool
+    clGetDeviceInfo(device_id, CL_DEVICE_IMAGE_SUPPORT, sizeof(a_bool), &a_bool, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarLogical(a_bool));
+
+    // CL_DEVICE_MAX_READ_IMAGE_ARGS          -> cl_uint
+    clGetDeviceInfo(device_id, CL_DEVICE_MAX_READ_IMAGE_ARGS, sizeof(a_uint), &a_uint, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_uint));
+
+    // CL_DEVICE_MAX_WRITE_IMAGE_ARGS         -> cl_uint
+    clGetDeviceInfo(device_id, CL_DEVICE_MAX_WRITE_IMAGE_ARGS, sizeof(a_uint), &a_uint, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_uint));
+
+    // CL_DEVICE_IMAGE_MAX_BUFFER_SIZE        -> size_t
+    clGetDeviceInfo(device_id, CL_DEVICE_IMAGE_MAX_BUFFER_SIZE, sizeof(a_size), &a_size, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_size));
+
+    // CL_DEVICE_IMAGE2D_MAX_WIDTH            -> size_t
+    clGetDeviceInfo(device_id, CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof(a_size), &a_size, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_size));
+
+    // CL_DEVICE_IMAGE2D_MAX_HEIGHT           -> size_t
+    clGetDeviceInfo(device_id, CL_DEVICE_IMAGE2D_MAX_HEIGHT, sizeof(a_size), &a_size, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_size));
+
+    // CL_DEVICE_IMAGE3D_MAX_WIDTH            -> size_t
+    clGetDeviceInfo(device_id, CL_DEVICE_IMAGE3D_MAX_WIDTH, sizeof(a_size), &a_size, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_size));
+
+    // CL_DEVICE_IMAGE3D_MAX_HEIGHT           -> size_t
+    clGetDeviceInfo(device_id, CL_DEVICE_IMAGE3D_MAX_HEIGHT, sizeof(a_size), &a_size, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_size));
+
+    // CL_DEVICE_IMAGE3D_MAX_DEPTH            -> size_t
+    clGetDeviceInfo(device_id, CL_DEVICE_IMAGE3D_MAX_DEPTH, sizeof(a_size), &a_size, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_size));
+
+    // CL_DEVICE_MAX_SAMPLERS                 -> cl_uint
+    clGetDeviceInfo(device_id, CL_DEVICE_MAX_SAMPLERS, sizeof(a_uint), &a_uint, NULL);
+    SET_VECTOR_ELT(res, i++, Rf_ScalarInteger(a_uint));
+
+    // Later on, it might be nice to add support for :
+    // CL_DEVICE_MAX_WORK_ITEM_SIZES          -> size_t[] (3 elements)
+    // CL_DEVICE_SINGLE_FP_CONFIG             -> cl_device_fp_config
+    // CL_DEVICE_DOUBLE_FP_CONFIG             -> cl_device_fp_config
 
     Rf_unprotect(2);
     return res;
 }
 
-/* Implementation of print.clPlatformID and oclInfo.clPlatformID */
+/* Implementation of print.clPlatformID and oclInfo.clPlatformID
+ * We also want to have access to the version of the ICD (based on clinfo.c source code, CC0)
+ */
 attribute_visible SEXP ocl_get_platform_info(SEXP platform) {
+    struct icd_loader_test {
+      cl_uint version;
+      const char *symbol;
+    } icd_loader_tests[] = {
+      { 11, "clCreateSubBuffer" },
+      { 12, "clCreateImage" },
+      { 20, "clSVMAlloc" },
+      { 21, "clGetHostTimer" },
+      { 22, "clSetProgramSpecializationConstant" },
+      { 0, NULL }
+    };
+    cl_uint icdl_ocl_version_found = 10;
+
     SEXP res;
     cl_platform_id platform_id = getPlatformID(platform);
-    const char *names[] = { "name", "vendor", "version", "profile", "exts" };
-    SEXP nv = Rf_protect(Rf_allocVector(STRSXP, 5));
+    const char *names[] = { "name", "vendor", "version", "profile", "exts", "icd.version" };
+    SEXP nv = Rf_protect(Rf_allocVector(STRSXP, 6));
     int i;
     for (i = 0; i < LENGTH(nv); i++) SET_STRING_ELT(nv, i, mkChar(names[i]));
     res = Rf_protect(Rf_allocVector(VECSXP, LENGTH(nv)));
@@ -230,7 +342,21 @@ attribute_visible SEXP ocl_get_platform_info(SEXP platform) {
     SET_VECTOR_ELT(res, 2, getPlatformInfo(platform_id, CL_PLATFORM_VERSION));
     SET_VECTOR_ELT(res, 3, getPlatformInfo(platform_id, CL_PLATFORM_PROFILE));
     SET_VECTOR_ELT(res, 4, getPlatformInfo(platform_id, CL_PLATFORM_EXTENSIONS));
+
+    /* Try to auto-detect the supported ICD loader version */
+    i=0;
+    do {
+      struct icd_loader_test check = icd_loader_tests[i];
+      if (check.symbol == NULL)
+        break;
+      if (dlsym(DL_MODULE, check.symbol) == NULL)
+        break;
+      icdl_ocl_version_found = check.version;
+      ++i;
+    } while (1);
+    SET_VECTOR_ELT(res, 5, Rf_ScalarReal((double)(icdl_ocl_version_found) / 10.0));
     Rf_unprotect(2);
+
     return res;
 }
 
