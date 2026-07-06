@@ -24,3 +24,11 @@ __kernel void multiply(__global numeric* output,
 	size_t i = get_global_id(0);
 	output[i] = factor * input[i];
 }
+
+__kernel void swap(__global char* output,
+                   const unsigned int count,
+                   __global const char* input)
+{
+	size_t i = get_global_id(0);
+	output[i] = ((input[i] & 0x0f) << 4) | (input[i] >> 4);
+}

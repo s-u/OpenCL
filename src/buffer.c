@@ -20,6 +20,8 @@ ClType get_type(SEXP mode_exp)
         Rf_error("invalid mode");
 
     const char* mode = CHAR(STRING_ELT(mode_exp, 0));
+    if (!strcmp(mode, "raw"))
+        return CLT_RAW;
     if (!strcmp(mode, "integer"))
         return CLT_INT;
     if (!strcmp(mode, "single"))
@@ -33,6 +35,7 @@ ClType get_type(SEXP mode_exp)
 SEXP get_type_description(ClType type)
 {
     switch (type) {
+    case CLT_RAW: return Rf_mkString("raw");
     case CLT_INT: return Rf_mkString("integer");
     case CLT_FLOAT: return Rf_mkString("single");
     case CLT_DOUBLE: return Rf_mkString("double");
@@ -44,6 +47,7 @@ SEXP get_type_description(ClType type)
 static size_t get_element_size(ClType type)
 {
     switch (type) {
+    case CLT_RAW: return sizeof(cl_char);
     case CLT_INT: return sizeof(cl_int);
     case CLT_FLOAT: return sizeof(cl_float);
     case CLT_DOUBLE: return sizeof(cl_double);
@@ -55,6 +59,7 @@ static size_t get_element_size(ClType type)
 static SEXPTYPE get_sexptype(ClType type)
 {
     switch (type) {
+    case CLT_RAW: return RAWSXP;
     case CLT_INT: return INTSXP;
     case CLT_FLOAT: return REALSXP;
     case CLT_DOUBLE: return REALSXP;
@@ -152,6 +157,17 @@ attribute_visible SEXP cl_supported_index(SEXP indices) {
 #endif
 }
 
+static void* getDataPtr(ClType type, SEXP values)
+{
+    switch (type) {
+    case CLT_RAW: return RAW(values);
+    case CLT_INT: return INTEGER(values);
+    case CLT_FLOAT: break; // handled elsewhere
+    case CLT_DOUBLE: return REAL(values);
+    }
+    return NULL;
+}
+
 /* Read data from an OpenCL buffer */
 attribute_visible SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
 {
@@ -208,8 +224,7 @@ attribute_visible SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
     }
 
     last_ocl_error = clEnqueueReadBuffer(queue, buffer, CL_TRUE, i0, read_size,
-					 (type == CLT_FLOAT) ? (void*)intermediate :
-					 ((type == CLT_INT) ? (void*)INTEGER(res) : (void*)REAL(res)),
+					 (type == CLT_FLOAT) ? (void*)intermediate : getDataPtr(type, res),
 					 wait ? 1 : 0, wait ? &wait : NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         if (type == CLT_FLOAT)
@@ -227,6 +242,17 @@ attribute_visible SEXP cl_read_buffer(SEXP buffer_exp, SEXP indices)
     }
 
     return res;
+}
+
+static const void* getDataPtrReadOnly(ClType type, SEXP values)
+{
+    switch (type) {
+    case CLT_RAW: return RAW_RO(values);
+    case CLT_INT: return INTEGER_RO(values);
+    case CLT_FLOAT: break; // handled elsewhere
+    case CLT_DOUBLE: return REAL_RO(values);
+    }
+    return NULL;
 }
 
 /* Write data to an OpenCL buffer */
@@ -302,8 +328,7 @@ attribute_visible SEXP cl_write_buffer(SEXP buffer_exp, SEXP indices, SEXP value
 
     /* Note that we do not have to block here (other than for mem mgmt reasons) */
     last_ocl_error = clEnqueueWriteBuffer(queue, buffer, CL_TRUE, i0, write_size,
-					  (type == CLT_FLOAT) ? (const void*)intermediate :
-					  ((type == CLT_INT) ? (const void*)INTEGER_RO(values) : (const void*)REAL_RO(values)),
+					  (type == CLT_FLOAT) ? (const void*)intermediate : getDataPtrReadOnly(type, values),
 					  0, NULL, NULL);
     if (last_ocl_error != CL_SUCCESS) {
         if (type == CLT_FLOAT)

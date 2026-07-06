@@ -26,3 +26,9 @@ multiply <- oclSimpleKernel(ctx, "multiply", code)
 input <- as.clBuffer((1:16)^2, ctx)
 output <- oclRun(multiply, 16, input, 2.5)
 output
+
+# 4. Run kernel with a raw buffer argument
+swap <- oclSimpleKernel(ctx, "swap", code, "raw")
+input <- as.clBuffer(as.raw(c(0x12, 0x34, 0x56, 0x78)), ctx)
+output <- oclRun(swap, 4, input)
+output

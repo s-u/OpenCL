@@ -1,5 +1,5 @@
 # Creating a buffer in a context
-clBuffer <- function(context, length, mode = c("numeric", "single", "double", "integer"))
+clBuffer <- function(context, length, mode = c("numeric", "single", "double", "integer", "raw"))
 {
     if (!inherits(context, "clContext"))
         stop("Invalid context")
@@ -19,6 +19,9 @@ as.double.clBuffer <- function(x, ...) {
 }
 as.integer.clBuffer <- function(x, ...) {
     as.integer(.Call(cl_read_buffer, x, NULL))
+}
+as.raw.clBuffer <- function(x, ...) {
+    as.raw(.Call(cl_read_buffer, x, NULL))
 }
 is.clBuffer <- function(any) inherits(any, "clBuffer")
 
@@ -67,7 +70,7 @@ length.clBuffer<- function(x) {
     # Determine expected class for value.
     targetClass <- switch(attributes(x)$mode,
                           single=, double="numeric",
-                          integer="integer",
+                          integer="integer", raw="raw",
                           stop("Invalid buffer class ", attributes(x)$mode))
 
     # Convert if necessary - target is either numeric or integer

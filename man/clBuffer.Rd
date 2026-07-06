@@ -3,6 +3,7 @@
 \alias{as.clBuffer}
 \alias{as.double.clBuffer}
 \alias{as.integer.clBuffer}
+\alias{as.raw.clBuffer}
 \alias{is.clBuffer}
 \alias{print.clBuffer}
 \alias{length.clBuffer}
@@ -18,15 +19,15 @@
 
   Just like vectors in R, OpenCL buffers have a mode, which is (as of now) one
   of "double" or "numeric" (corresponds to \code{double} in OpenCL C), "single"
-  (\code{float}) or "integer" (\code{int}).
+  (\code{float}), "integer" (\code{int}), or "raw" (\code{char}).
 
   The constructor \code{clBuffer} takes a context as created by
   \code{oclContext}, a length and a mode argument.
 
   The conversion function \code{as.clBuffer} creates an OpenCL buffer of the
   same length and mode as the argument and copies the data. Conversely,
-  \code{as.double} (= \code{as.numeric}) and \code{as.integer} read a buffer and
-  coerce the result as vector the appropriate mode.
+  \code{as.double} (= \code{as.numeric}), \code{as.integer} and \code{as.raw}
+  read a buffer and coerce the result as vector the appropriate mode.
 
   With \code{is.clBuffer} one can check if an object is an OpenCL buffer.
 
@@ -48,7 +49,7 @@
   \code{value} must have the same length as the buffer (no recycling).
 }
 \usage{
-clBuffer(context, length, mode = c("numeric", "single", "double", "integer"))
+clBuffer(context, length, mode = c("numeric", "single", "double", "integer", "raw"))
 as.clBuffer(vector, context, mode = class(vector))
 is.clBuffer(any)
 \method{as.double}{clBuffer}(x, \dots)
