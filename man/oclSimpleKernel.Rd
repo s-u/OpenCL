@@ -9,7 +9,7 @@
 }
 \usage{
 oclSimpleKernel(context, name, code,
-    output.mode = c("numeric", "single", "double", "integer"))
+    output.mode = c("numeric", "single", "double", "integer", "raw"))
 }
 \arguments{
   \item{context}{Context (as created by \code{\link{oclContext}})
@@ -21,8 +21,8 @@ oclSimpleKernel(context, name, code,
     concatenated (as-is, no newlines are added!) by the engine.}
   \item{output.mode}{Mode of the output argument of the kernel, as in
     \code{\link{clBuffer}}. This can be one of "single", "double", "integer",
-    or "numeric". The default value "numeric" maps to the default precision of
-    the context.
+    "raw" or "numeric". The default value "numeric" maps to the default
+    precision of the context.
 
     The kernel code may use a type \code{numeric} that is typedef'd to the
     given precision, i.e. either \code{float} or \code{double}. The OpenCL
@@ -35,8 +35,8 @@ oclSimpleKernel(context, name, code,
 
   The kernel built by this function is simple in that it can have
   exactly one vector output and arbitrarily many inputs. The first
-  argument of the kernel must be \code{__global double*} or
-  \code{__global float*} for the output and the second argument must be
+  argument of the kernel must be \code{__global T*} with \code{T} corresponding
+  to \code{output.mode} for the output and the second argument must be
   \code{const unsigned int} for the length of the output vector.
   Additional numeric scalar arguments are assumed to have the same mode as the
   output, i.e. if the output shall have "double" precision, then numeric scalar

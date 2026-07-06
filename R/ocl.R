@@ -90,7 +90,7 @@ oclContext <- function(device = "default", precision = c("best", "single", "doub
 }
 
 # Compile a "simple kernel"
-oclSimpleKernel <- function(context, name, code, output.mode = c("numeric", "single", "double", "integer")) {
+oclSimpleKernel <- function(context, name, code, output.mode = c("numeric", "single", "double", "integer", "raw")) {
     if (!inherits(context,"clContext"))
         stop("invalid context")
     output.mode <- match.arg(output.mode)

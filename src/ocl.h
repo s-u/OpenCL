@@ -20,6 +20,7 @@ extern SEXP oclMessageSymbol;
 
 /* Supported buffer data types */
 typedef enum {
+    CLT_RAW,
     CLT_INT,
     CLT_FLOAT,
     CLT_DOUBLE

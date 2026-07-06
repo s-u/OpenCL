@@ -48,11 +48,23 @@ print(attributes(ints)$mode)
 print(ints)
 length(ints)
 
+#    The same for a raw buffer
+bytes <- clBuffer(ctx, 32, "raw")
+bytes[] <- as.raw(16:47)
+
+#    Inspect the resulting buffer
+class(bytes)
+print(attributes(bytes)$mode)
+print(bytes)
+length(bytes)
+
 # 3. Let's see if we can guess the type correctly
 numeric.buf <- as.clBuffer(sqrt(3:18), ctx)
 print(numeric.buf)
 integer.buf <- as.clBuffer(-1:14, ctx)
 print(integer.buf)
+byte.buf <- as.clBuffer(as.raw(1:16), ctx)
+print(byte.buf)
 
 # 4. Other functions
 c(is.clBuffer(ints), is.clBuffer(1:16), is.clBuffer(ctx))
