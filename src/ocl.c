@@ -99,6 +99,7 @@ attribute_visible SEXP ocl_context(SEXP device_exp)
     cl_command_queue queue;
     SEXP ctx_exp, queue_exp;
     cl_int last_ocl_error;
+	cl_command_queue_properties queue_properties;
 
     ctx = clCreateContext(NULL, 1, &device_id, NULL, NULL, &last_ocl_error);
     if (!ctx)
@@ -106,12 +107,17 @@ attribute_visible SEXP ocl_context(SEXP device_exp)
     ctx_exp = Rf_protect(mkContext(ctx));
     Rf_setAttrib(ctx_exp, oclDeviceSymbol, device_exp);
 
+    /* test device for out-of-order queue property */
+    clGetDeviceInfo(device_id, CL_DEVICE_QUEUE_PROPERTIES, sizeof(queue_properties), &queue_properties, NULL);
+
     /* Add command queue */
-    queue = clCreateCommandQueue(ctx, device_id, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &last_ocl_error);
-    /* Some implementations don't support the out-of-order flag, retry without. */
-    if (!queue && last_ocl_error == CL_INVALID_VALUE) {
-        queue = clCreateCommandQueue(ctx, device_id, 0, &last_ocl_error);
+    if( queue_properties & CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE )    {
+      queue = clCreateCommandQueue(ctx, device_id, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &last_ocl_error);
+    } else {
+	/* Some implementations don't support the out-of-order flag, retry without. */
+      queue = clCreateCommandQueue(ctx, device_id, 0, &last_ocl_error);
     }
+	
     if (!queue)
         ocl_err("clCreateCommandQueue", last_ocl_error);
     queue_exp = Rf_protect(mkCommandQueue(queue));
